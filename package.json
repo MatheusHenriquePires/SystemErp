@@ -1,0 +1,23 @@
+{
+  "name": "sistema-financeiro-arnold",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev --port 4000",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "apexcharts": "^5.3.6",
+    "postgres": "^3.4.7",
+    "vue3-apexcharts": "^1.10.0"
+  },
+  "devDependencies": {
+    "@nuxtjs/tailwindcss": "^6.12.1",
+    "nuxt": "^3.12.0",
+    "vue": "^3.4.31",
+    "vue-router": "^4.4.0"
+  }
+}
