@@ -13,12 +13,13 @@ RUN npm install --ignore-scripts
 # 5. Copia todo o resto do código
 COPY . .
 
-# ... (Linha 16: # 6. Constrói e gera os tipos em um comando só (Resolve o erro de timing))
-RUN npx nuxi prepare 
+#
+#
+# 6.
+ RUN npx nuxi prepare  <-- Esta linha cria o tsconfig
+# 7.
+ RUN npm run build     <-- Esta linha compila o tsconfig
 
-# 7. Constrói o projeto (O build depende da camada anterior)
-RUN npm run build
-# ... (Linha 19: EXPOSE 3000)
 # 7. Expõe a porta
 EXPOSE 3000
 
