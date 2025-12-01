@@ -2,7 +2,7 @@
   <div class="min-h-screen flex items-center justify-center bg-slate-900">
     <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md">
       <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-slate-800">Arnold.ai</h1>
+        <h1 class="text-3xl font-bold text-slate-800">Sitema ERP</h1>
         <p class="text-slate-500">Login Administrativo</p>
       </div>
 
@@ -21,7 +21,7 @@
           {{ erro }}
         </div>
 
-        <button type="submit" :disabled="loading" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition shadow-lg disabled:opacity-50">
+        <button type="submit" :disabled="loading" class="w-full bg-orange-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition shadow-lg disabled:opacity-50">
           {{ loading ? 'Conectando...' : 'ENTRAR NO SISTEMA' }}
         </button>
       </form>

@@ -3,8 +3,8 @@
     
     <aside class="w-64 bg-white border-r border-slate-200 hidden md:flex flex-col">
       <div class="p-6 flex items-center gap-2 border-b border-slate-100">
-        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">A</div>
-        <span class="font-bold text-xl tracking-tight text-blue-900">Arnold ERP</span>
+        <div class="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center text-white font-bold">A</div>
+        <span class="font-bold text-xl tracking-tight text-blue-900">Sistema ERP</span>
       </div>
       <nav class="flex-1 p-4 space-y-1">
         <NuxtLink to="/" class="px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-md font-medium cursor-pointer flex items-center gap-3 transition">
@@ -13,7 +13,7 @@
         <NuxtLink to="/clientes" class="px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-md font-medium cursor-pointer flex items-center gap-3 transition">
           <span class="text-lg">👥</span> Clientes
         </NuxtLink>
-        <div class="px-3 py-2 text-blue-600 bg-blue-50 rounded-md font-medium cursor-pointer flex items-center gap-3">
+        <div class="px-3 py-2 text-orange-600 bg-blue-50 rounded-md font-medium cursor-pointer flex items-center gap-3">
           <span class="text-lg">📦</span> Produtos
         </div>
       </nav>
@@ -25,7 +25,7 @@
           <h1 class="text-2xl font-bold text-slate-800">Catálogo</h1>
           <p class="text-slate-500">Produtos e Serviços disponíveis.</p>
         </div>
-        <button @click="mostrarModal = true" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition shadow-sm flex items-center gap-2">
+        <button @click="mostrarModal = true" class="bg-orange-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition shadow-sm flex items-center gap-2">
           <span>+</span> Novo Item
         </button>
       </header>
@@ -73,7 +73,7 @@
           <form @submit.prevent="salvarProduto">
             <div class="flex gap-4 mb-4">
               <label class="flex items-center gap-2 cursor-pointer">
-                <input type="radio" v-model="form.tipo" value="produto" class="text-blue-600">
+                <input type="radio" v-model="form.tipo" value="produto" class="text-orange-600">
                 <span>Produto Físico</span>
               </label>
               <label class="flex items-center gap-2 cursor-pointer">
@@ -100,7 +100,7 @@
 
             <div class="flex gap-2 justify-end">
               <button type="button" @click="mostrarModal = false" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded">Cancelar</button>
-              <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium">
+              <button type="submit" class="px-4 py-2 bg-orange-600 text-white rounded hover:bg-blue-700 font-medium">
                 {{ salvando ? 'Salvando...' : 'Cadastrar' }}
               </button>
             </div>
