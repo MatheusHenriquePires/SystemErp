@@ -13,10 +13,13 @@ RUN npm install --ignore-scripts
 # 5. Copia o código fonte para dentro do container
 COPY . .
 
-# 6. Constrói e prepara o projeto
-# O '&&' garante que o build só roda se o prepare (geração de tipos) der certo.
-RUN npx nuxi prepare && npm run build 
 
+# 6. Constrói e prepara o projeto
+RUN npm install # Já foi rodado na linha 4
+
+# 7. Constrói o projeto
+RUN npm run build 
+# ...
 # 7. Expõe a porta
 EXPOSE 3000
 

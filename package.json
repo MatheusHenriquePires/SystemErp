@@ -3,12 +3,12 @@
   "private": true,
   "type": "module",
 "scripts": {
-  "build": "nuxi generate",
+  "build": "nuxt build",
   "dev": "nuxt dev --port 4000",
-    "generate": "nuxt generate",
-    "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
-  },
+  "generate": "nuxt generate",
+  "preview": "nuxt preview",
+  "postinstall": "nuxt prepare"
+},
   "dependencies": {
     "apexcharts": "^5.3.6",
     "jsonwebtoken": "^9.0.2",
