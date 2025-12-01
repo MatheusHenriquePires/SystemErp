@@ -7,26 +7,21 @@
         <span class="font-bold text-xl tracking-tight text-blue-900">Sistema ERP</span>
       </div>
       
+
       <nav class="flex-1 p-4 space-y-1">
         <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 mt-2">Gestão</p>
         
-        <div class="px-3 py-2 text-orange-600 bg-blue-50 rounded-md font-medium cursor-pointer flex items-center gap-3">
+        <div class="px-3 py-2 text-blue-600 bg-blue-50 rounded-md font-medium cursor-pointer flex items-center gap-3">
           <span class="text-lg">📊</span> Dashboard
         </div>
         
+        <NuxtLink to="/vendas" class="px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-md font-medium cursor-pointer flex items-center gap-3 transition">
+          <span class="text-lg">🛒</span> Vendas
+        </NuxtLink>
+
         <div class="px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-md font-medium cursor-pointer flex items-center gap-3 transition">
           <span class="text-lg">💰</span> Financeiro
         </div>
-
-        <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 mt-6">Cadastros</p>
-
-        <NuxtLink to="/clientes" class="px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-md font-medium cursor-pointer flex items-center gap-3 transition">
-          <span class="text-lg">👥</span> Clientes
-        </NuxtLink>
-
-        <NuxtLink to="/produtos" class="px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-md font-medium cursor-pointer flex items-center gap-3 transition">
-          <span class="text-lg">📦</span> Produtos
-        </NuxtLink>
       </nav>
 
       <div class="p-4 border-t border-slate-100">
