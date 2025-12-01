@@ -2,8 +2,8 @@
   "name": "sistema-financeiro-arnold",
   "private": true,
   "type": "module",
-  "scripts": {
-  "build": "nuxt build --no-client",
+"scripts": {
+  "build": "nuxi generate",
   "dev": "nuxt dev --port 4000",
     "generate": "nuxt generate",
     "preview": "nuxt preview",

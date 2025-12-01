@@ -13,8 +13,10 @@ RUN npm install --ignore-scripts
 # 5. Copia todo o resto do código
 COPY . .
 
-# 6. Gera os arquivos de tipagem (tsconfig)
-RUN npx nuxi prepare && npm run build
+# 6. 
+RUN npx nuxi prepare
+# 7.
+ RUN npm run build  <-- Agora ele roda 'nuxi generate'
 
 # 7. Expõe a porta
 EXPOSE 3000
