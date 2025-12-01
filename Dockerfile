@@ -13,6 +13,9 @@ RUN npm install --ignore-scripts
 # 5. Copia todo o resto do código
 COPY . .
 
+ RUN npx nuxi prepare
+ RUN npm run build 
+
 # 6. Expõe a porta
 EXPOSE 3000
 
