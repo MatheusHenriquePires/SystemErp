@@ -1,25 +1,14 @@
-# 1. Usa a imagem Node 20 (compatível com Nuxt 3)
-FROM node:20-alpine
+FROM node:18
 
-# 2. Define a pasta de trabalho
 WORKDIR /app
 
-# 3. Copia os arquivos de dependências
 COPY package*.json ./
+RUN npm install
 
-# 4. Instala as dependências
-RUN npm install --ignore-scripts
-
-# 5. Copia o código fonte para dentro do container
 COPY . .
 
-# 6. Expõe a porta
+RUN npx nuxi prepare
+RUN npm run build
+
 EXPOSE 3000
-
-# 7. Configurações de ambiente
-ENV NUXT_HOST=0.0.0.0
-ENV NUXT_PORT=3000
-
-# ...
-# 8. Comando de Iniciação (Resolve o erro de timing forçando o build e o start)
-CMD ["sh", "-c", "npm run build && node .output/server/index.mjs"]
+CMD ["npm", "run", "start"]
