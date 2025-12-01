@@ -14,17 +14,14 @@ RUN npm install --ignore-scripts
 COPY . .
 
 # 6. Gera os arquivos de tipagem (tsconfig)
-RUN npx nuxi prepare
+RUN npx nuxi prepare && npm run build
 
-# 7. Constrói o projeto (O build depende da camada anterior)
-RUN npm run build 
-
-# 8. Expõe a porta
+# 7. Expõe a porta
 EXPOSE 3000
 
-# 9. Configurações de ambiente
+# 8. Configurações de ambiente
 ENV NUXT_HOST=0.0.0.0
 ENV NUXT_PORT=3000
 
-# 10. Inicia o servidor
+# 9. Comando de Iniciação
 CMD ["node", ".output/server/index.mjs"]
