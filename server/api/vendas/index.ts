@@ -1,5 +1,5 @@
 // server/api/vendas/index.ts
-import sql from '~/server/database' // Importa a instância de conexão
+import sql from '~/server/database' // <-- Importação CORRETA do default export 'sql'
 import { defineEventHandler, getCookie, createError } from 'h3'
 import jwt from 'jsonwebtoken'
 
@@ -14,6 +14,7 @@ export default defineEventHandler(async (event) => {
   const empresa_id = payload.empresa_id
 
   try {
+    // Usamos 'sql` diretamente, sem 'db.query'
     const result = await sql`
       SELECT 
         v.id, 
