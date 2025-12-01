@@ -17,7 +17,7 @@ COPY . .
 RUN npx nuxi prepare 
 
 # 7. Constrói o projeto (O build depende da camada anterior)
-RUN npm run build 
+RUN npm run build
 # ... (Linha 19: EXPOSE 3000)
 # 7. Expõe a porta
 EXPOSE 3000
