@@ -14,8 +14,8 @@ RUN npm install --ignore-scripts
 COPY . .
 
 # 6. Constrói e gera os tipos em um comando só (Resolve o erro de timing)
-RUN npx nuxi prepare && npm run build
-
+RUN npx nuxi prepare
+RUN npm run build
 # 7. Expõe a porta
 EXPOSE 3000
 
