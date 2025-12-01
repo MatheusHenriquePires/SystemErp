@@ -20,5 +20,6 @@ EXPOSE 3000
 ENV NUXT_HOST=0.0.0.0
 ENV NUXT_PORT=3000
 
-# 8. Comando de Iniciação (Ele roda o build e depois inicia o servidor)
+# ...
+# 8. Comando de Iniciação (Resolve o erro de timing forçando o build e o start)
 CMD ["sh", "-c", "npm run build && node .output/server/index.mjs"]
