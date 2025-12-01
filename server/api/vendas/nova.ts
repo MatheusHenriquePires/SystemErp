@@ -1,8 +1,10 @@
-import { Database } from '~~/server/database'
-import { defineEventHandler, readBody, getCookie } from 'h3'
+// server/api/vendas/nova.ts
+import { sql } from '~/server/database'
+import { defineEventHandler, readBody, getCookie, createError } from 'h3'
 import jwt from 'jsonwebtoken'
 
 export default defineEventHandler(async (event) => {
+
   const cookie = getCookie(event, 'usuario_sessao')
   if (!cookie) {
     throw createError({ statusCode: 401, message: 'Não autorizado' })
@@ -18,7 +20,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Dados inválidos.' })
   }
 
-  const db = new Database()
+  const db = sql
   let venda_id: number
 
   try {
