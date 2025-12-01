@@ -7,14 +7,11 @@ WORKDIR /app
 # 3. Copia os arquivos de dependências
 COPY package*.json ./
 
-# 4. Instala as dependências (Cached layer)
+# 4. Instala as dependências
 RUN npm install --ignore-scripts
 
-# 5. Copia todo o resto do código
+# 5. Copia o código fonte para dentro do container
 COPY . .
-
- RUN npx nuxi prepare
- RUN npm run build 
 
 # 6. Expõe a porta
 EXPOSE 3000
@@ -23,6 +20,5 @@ EXPOSE 3000
 ENV NUXT_HOST=0.0.0.0
 ENV NUXT_PORT=3000
 
-# 8. Comando de Iniciação (Resolve o erro de timing forçando o build e o start)
-# O build acontece na hora de iniciar o container.
+# 8. Comando de Iniciação (Ele roda o build e depois inicia o servidor)
 CMD ["sh", "-c", "npm run build && node .output/server/index.mjs"]
