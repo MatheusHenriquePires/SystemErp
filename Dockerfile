@@ -7,25 +7,19 @@ WORKDIR /app
 # 3. Copia os arquivos de dependências
 COPY package*.json ./
 
-# 4. Instala as dependências, ignorando scripts opcionais
+# 4. Instala as dependências (Cached layer)
 RUN npm install --ignore-scripts
 
-# 5. Copia o código fonte para dentro do container
+# 5. Copia todo o resto do código
 COPY . .
 
-
-# 6. Constrói e prepara o projeto
-RUN npm install # Já foi rodado na linha 4
-
-# 7. Constrói o projeto
-RUN npm run build 
-# ...
-# 7. Expõe a porta
+# 6. Expõe a porta
 EXPOSE 3000
 
-# 8. Configurações de ambiente
+# 7. Configurações de ambiente
 ENV NUXT_HOST=0.0.0.0
 ENV NUXT_PORT=3000
 
-# 9. Comando de Iniciação
-CMD ["node", ".output/server/index.mjs"]
+# 8. Comando de Iniciação (Resolve o erro de timing forçando o build e o start)
+# O build acontece na hora de iniciar o container.
+CMD ["sh", "-c", "npm run build && node .output/server/index.mjs"]
