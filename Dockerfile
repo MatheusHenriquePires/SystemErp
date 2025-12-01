@@ -1,33 +1,44 @@
-# 1. Node Alpine (leve e compatível com Nuxt 3)
-FROM node:20-alpine
+# ---- BASE ----
+FROM node:20-alpine AS builder
 
-# 2. Dependências necessárias para o Tailwind/PostCSS/Vite
+# Dependências necessárias
 RUN apk add --no-cache libc6-compat
 
-# 3. Pasta de trabalho
 WORKDIR /app
 
-# 4. Copia apenas arquivos de dependências (cache otimizado)
+# Copia dependências
 COPY package*.json ./
 
-# 5. Instala dependências normalmente (sem ignore-scripts)
+# Instala dependências
 RUN npm install
 
-# 6. Copia o restante do código
+# Copia todo o código
 COPY . .
 
-# 7. Prepara o Nuxt (gera .nuxt, types, etc)
+# Gera .nuxt e types
 RUN npx nuxi prepare
 
-# 8. Build da aplicação (gera .output)
+# Build final da aplicação
 RUN npm run build
 
-# 9. Expõe porta
+
+# ---- RUNNER (imagem final leve) ----
+FROM node:20-alpine
+
+WORKDIR /app
+
+RUN apk add --no-cache libc6-compat
+
+# Copiar apenas o resultado final
+COPY --from=builder /app/.output ./.output
+COPY --from=builder /app/package*.json ./
+
+# Apenas dependências necessárias para produção
+RUN npm install --omit=dev
+
+ENV NITRO_HOST=0.0.0.0
+ENV NITRO_PORT=3000
+
 EXPOSE 3000
 
-# 10. Define ambiente do Nitro
-ENV NITRO_PORT=3000
-ENV NITRO_HOST=0.0.0.0
-
-# 11. Inicia o servidor otimizado do Nuxt
 CMD ["node", ".output/server/index.mjs"]
