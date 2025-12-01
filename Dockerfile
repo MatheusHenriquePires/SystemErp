@@ -13,11 +13,15 @@ RUN npm install --ignore-scripts
 # 5. Copia o resto do código
 COPY . .
 
-# 6. Gera os arquivos do Nuxt (Prepare) manualmente antes do build
+# ... (Até a Linha 15, que é "COPY . .") ...
+
+# 6. Prepara o projeto (Gera os arquivos de configuração do Nuxt)
+# Fazemos isso ANTES de instalar e construir.
 RUN npx nuxi prepare
 
 # 7. Constrói o projeto
-RUN npm run build
+# O 'build' precisa dos arquivos gerados pelo 'prepare'
+RUN npm run build 
 
 # 8. Expõe a porta
 EXPOSE 3000
