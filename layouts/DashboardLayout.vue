@@ -13,7 +13,12 @@
         <NuxtLink to="/" class="px-3 py-2 text-blue-600 bg-blue-50 rounded-md font-medium cursor-pointer flex items-center gap-3 transition">
           <span class="text-lg">📊</span> Dashboard
         </NuxtLink>
-        
+        <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 mt-2">Gestão</p>
+
+<NuxtLink to="/quotes" class="px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-md font-medium cursor-pointer flex items-center gap-3 transition">
+  <span class="text-lg">📄</span> Orçamentos
+</NuxtLink> 
+
         <NuxtLink to="/vendas" class="px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-md font-medium cursor-pointer flex items-center gap-3 transition">
           <span class="text-lg">🛒</span> Vendas
         </NuxtLink>
