@@ -2,51 +2,54 @@ import { defineEventHandler, readMultipartFormData, createError } from 'h3'
 import pdf from 'pdf-parse'
 
 export default defineEventHandler(async (event) => {
-    // 1. Ler o arquivo enviado (Multipart Form Data)
+    // 1. Ler o arquivo enviado pelo site
     const files = await readMultipartFormData(event)
+    
     if (!files || files.length === 0) {
         throw createError({ statusCode: 400, message: 'Nenhum arquivo enviado.' })
     }
 
-    const pdfFile = files[0] // O arquivo PDF
+    // O primeiro arquivo da lista (o PDF)
+    const pdfFile = files[0]
 
     try {
-        // 2. Extrair o Texto do PDF
+        // 2. Converter o PDF em Texto Puro
         const data = await pdf(pdfFile.data)
         const text = data.text
 
-        // 3. Processar o Texto (A Mágica acontece aqui)
-        // AQUI você poderia mandar 'text' para o ChatGPT formatar.
-        // Vamos usar uma lógica manual para tentar achar linhas com R$
-        
+        // 3. Processar linha por linha para achar produtos
         const lines = text.split('\n')
         const items = []
 
-        // Lógica simples: Procura linhas que tenham nome e preço
-        // Exemplo esperado: "Chapa MDF Branco ... 150,00"
         for (const line of lines) {
-            // Remove espaços extras
             const cleanLine = line.trim()
-            if (!cleanLine) continue
-
-            // Tenta achar um preço no final da linha (ex: 150,00 ou 150.00)
-            // Regex procura números no fim da string
-            const priceMatch = cleanLine.match(/(\d+[.,]\d{2})$/)
             
-            if (priceMatch) {
-                const priceStr = priceMatch[0].replace(',', '.')
-                const price = parseFloat(priceStr)
-                
-                // O nome é tudo que vem antes do preço (simplificado)
-                const name = cleanLine.replace(priceMatch[0], '').trim()
+            // Ignora linhas muito curtas (lixo)
+            if (cleanLine.length < 5) continue 
 
-                // Filtra linhas que são só lixo (cabeçalhos, datas, etc)
-                if (name.length > 3 && price > 0) {
+            // A MÁGICA DO REGEX (Busca linhas que terminam com preço)
+            // Procura padrões como: "1.200,00" ou "50,00" no final da linha
+            const priceMatch = cleanLine.match(/R?\$?\s?(\d{1,3}(?:\.\d{3})*,\d{2})\s*$/)
+
+            if (priceMatch) {
+                // Limpa o preço (tira o ponto de milhar e troca virgula por ponto)
+                // Ex: "1.200,00" -> "1200.00"
+                const priceStr = priceMatch[1].replace(/\./g, '').replace(',', '.')
+                const cost = parseFloat(priceStr)
+
+                // O nome é tudo que vem antes do preço
+                let name = cleanLine.replace(priceMatch[0], '').trim()
+                
+                // Limpeza extra (remove "UN", "M2", "QTDE" se tiver no nome)
+                name = name.replace(/\b(UN|PC|M2|KG|LTA)\b.*$/i, '').trim()
+
+                // Se sobrou um nome válido e um preço maior que zero, é um produto!
+                if (name.length > 2 && cost > 0) {
                     items.push({
                         name: name,
-                        cost: price,
-                        markup: 40, // Margem padrão de 40%
-                        price: price * 1.4 // Preço final calculado
+                        cost: cost, // Custo extraído do PDF
+                        markup: 40, // Sugestão de margem padrão (40%)
+                        price: cost * 1.4 // Preço de venda calculado
                     })
                 }
             }
@@ -55,7 +58,7 @@ export default defineEventHandler(async (event) => {
         return { success: true, items: items }
 
     } catch (error) {
-        console.error("Erro ao ler PDF:", error)
-        throw createError({ statusCode: 500, message: 'Falha ao processar o arquivo PDF.' })
+        console.error("Erro PDF:", error)
+        throw createError({ statusCode: 500, message: 'Erro ao processar PDF. Verifique se não é uma imagem escaneada.' })
     }
 })
