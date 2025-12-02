@@ -5,7 +5,7 @@ export default defineNuxtConfig({
   modules: ['@nuxtjs/tailwindcss'],
 
   // Linha crucial para carregar o Tailwind
-  css: ['~/assets/css/main.css'], 
+  css: ['~/assets/css/main.css'],
 
   // Configurações do compilador
   postcss: {
@@ -17,8 +17,11 @@ export default defineNuxtConfig({
 
   // Garanta que o target seja node-server (para o deploy)
   nitro: {
-    preset: 'node-server'
+    externals: {
+      external: ['pdf-parse'],
+    },
+    preset: 'node-server',
   },
-  
+
   devtools: { enabled: true },
 });
