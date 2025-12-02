@@ -1,9 +1,8 @@
-import { defineEventHandler } from 'h3'
-import formidable from 'formidable'
-import fs from 'fs'
-import pdfParse from 'pdf-parse'
+import { defineEventHandler } from "h3";
+import formidable from "formidable";
+import fs from "fs";
+import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.js";
 
-// Desabilita o body parser do Nitro
 export default defineEventHandler(async (event) => {
   try {
     const form = formidable({
@@ -11,7 +10,6 @@ export default defineEventHandler(async (event) => {
       keepExtensions: true,
     });
 
-    // Parse multipart/form-data
     const { files } = await new Promise((resolve, reject) => {
       form.parse(event.node.req, (err, fields, files) => {
         if (err) reject(err);
@@ -20,45 +18,42 @@ export default defineEventHandler(async (event) => {
     });
 
     if (!files.file) {
-      return {
-        error: true,
-        message: "Nenhum arquivo enviado"
-      };
+      return { error: true, message: "Nenhum arquivo enviado" };
     }
 
-    const uploadedFile = Array.isArray(files.file)
-      ? files.file[0]
-      : files.file;
+    const file = Array.isArray(files.file) ? files.file[0] : files.file;
 
-    const filePath = uploadedFile.filepath;
+    const pdfData = new Uint8Array(fs.readFileSync(file.filepath));
 
-    // Lê o PDF
-    const pdfBuffer = fs.readFileSync(filePath);
-    const data = await pdfParse(pdfBuffer);
+    // Lê o PDF com pdfjs-dist
+    const loadingTask = pdfjsLib.getDocument({ data: pdfData });
+    const pdf = await loadingTask.promise;
 
-    const texto = data.text || "";
+    let textoExtraido = "";
 
-    // Expressão para capturar preços
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const content = await page.getTextContent();
+
+      const pageText = content.items
+        .map((item) => ("str" in item ? item.str : ""))
+        .join(" ");
+
+      textoExtraido += pageText + "\n\n";
+    }
+
+    // regex para pegar preços
     const regexPreco = /R\$ ?\d{1,3}(?:\.\d{3})*,\d{2}/g;
-    const precos = texto.match(regexPreco) || [];
-
-    // Monta retorno (ajuste conforme sua regra)
-    const response = {
-      sucesso: true,
-      paginas: data.numpages,
-      textoExtraido: texto.substring(0, 1500), // Para não explodir payload
-      precosEncontrados: precos,
-    };
-
-    return response;
-
-  } catch (err: any) {
-    console.error("Erro no upload.post.ts:", err);
+    const precos = textoExtraido.match(regexPreco) || [];
 
     return {
-      error: true,
-      message: "Erro ao processar PDF",
-      detalhe: err?.message,
+      sucesso: true,
+      paginas: pdf.numPages,
+      texto: textoExtraido.substring(0, 2000),
+      precos,
     };
+  } catch (err) {
+    console.error("Erro ao ler PDF:", err);
+    return { error: true, message: "Falha ao processar o PDF" };
   }
 });
