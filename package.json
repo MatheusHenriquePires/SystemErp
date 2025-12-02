@@ -11,12 +11,10 @@
   },
   "dependencies": {
     "apexcharts": "^5.3.6",
-    "canvas": "^3.2.0",
     "formidable": "^3.5.4",
     "jsonwebtoken": "^9.0.2",
     "openai": "^6.9.1",
     "pdf-lib": "^1.17.1",
-    "pdf-parse": "^2.4.5",
     "pdf-text-reader": "^5.1.0",
     "pdfjs-dist": "^5.4.449",
     "postgres": "^3.4.7",
