@@ -178,9 +178,8 @@ async function submitQuote() {
 
   try {
     // Prepara o objeto para enviar, garantindo que NÚMEROS sejam NÚMEROS
-    // Isso evita o erro 500 no banco de dados
     const payload = {
-      customerId: Number(quote.customerId), // Converte string "5" para numero 5
+      customerId: Number(quote.customerId), 
       paymentTerms: quote.paymentTerms,
       items: quote.items.map(item => ({
         materialId: item.materialId ? Number(item.materialId) : null,
@@ -190,7 +189,7 @@ async function submitQuote() {
       }))
     };
 
-    console.log('Enviando dados:', payload); // Debug no console do navegador
+    console.log('Enviando dados:', payload); 
 
     const response = await $fetch('/api/quotes', {
       method: 'POST',
@@ -199,7 +198,10 @@ async function submitQuote() {
 
     if (response.success) {
       alert(`✅ Orçamento #${response.quoteId} salvo com sucesso!`);
-      // Redireciona para a lista ou visualização (ajuste conforme necessário)
+      
+      // --- CORREÇÃO AQUI ---
+      // Redireciona para a LISTA DE ORÇAMENTOS (que existe)
+      // em vez de tentar abrir o detalhe (que não existe ainda)
       router.push('/quotes'); 
     }
 
@@ -208,8 +210,6 @@ async function submitQuote() {
     alert('❌ Erro ao salvar orçamento. Verifique se todos os campos estão preenchidos.');
   } finally {
     isSubmitting.value = false;
-
   }
 }
-// Forçando atualização do Git
 </script>
