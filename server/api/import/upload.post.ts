@@ -29,6 +29,7 @@ export default defineEventHandler(async (event) => {
     return {
       error: true,
       message: error.message || "Erro ao processar PDF"
+      
     };
   }
 });
