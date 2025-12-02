@@ -1,47 +1,76 @@
 import { readMultipartFormData } from "h3";
-import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.js";
+import OpenAI from "openai";
 
 export default defineEventHandler(async (event) => {
   try {
+    // 🔥 Lê o PDF enviado pelo <input type="file">
     const form = await readMultipartFormData(event);
-    if (!form || !form[0]) {
+    const file = form?.[0];
+
+    if (!file) {
       return { sucesso: false, erro: "Nenhum PDF enviado." };
     }
 
-    const pdfFile = form[0];
-    const data = new Uint8Array(pdfFile.data);
+    // Converte PDF em base64 (para enviar como imagem para a API)
+    const base64 = file.data.toString("base64");
 
-    // 🔥 DESATIVA WORKER (HOSTINGER NECESSÁRIO)
-    pdfjsLib.GlobalWorkerOptions.workerSrc = null;
+    // 🔥 Cliente OpenAI
+    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    const pdf = await pdfjsLib.getDocument({ data }).promise;
+    // 🔥 Integração com GPT-4o Mini Vision (barato e preciso)
+    const result = await client.chat.completions.create({
+      model: "gpt-4o-mini-vision",
+      temperature: 0,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "input_image",
+              image_url: `data:application/pdf;base64,${base64}`
+            },
+            {
+              type: "text",
+              text: `
+Extraia do PDF todos os produtos e retorne exatamente no formato JSON abaixo:
 
-    let paginas = [];
+[
+  {
+    "nome": "",
+    "preco_custo": 0,
+    "margem": 40,
+    "preco_venda": 0
+  }
+]
 
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
+Regra:
+- Nome deve conter: categoria + produto + dimensões.
+- O preço deve ser convertido para número (ex: R$ 92,00 → 92.00)
+- "margem" = 40 sempre.
+- "preco_venda" = preco_custo * 1.4
+`
+            }
+          ]
+        }
+      ]
+    });
 
-      const texto = content.items
-        .map((item: any) => item.str)
-        .join(" ")
-        .trim();
-
-      paginas.push(texto);
-    }
+    // 🔥 Conteúdo retornado pela IA (um JSON como texto)
+    const text = result.choices[0].message?.content || "";
+    const produtos = JSON.parse(text);
 
     return {
       sucesso: true,
-      paginas: pdf.numPages,
-      texto: paginas,
+      total: produtos.length,
+      produtos
     };
 
   } catch (err) {
-    console.error("ERRO PDF:", err);
+    console.error(err);
     return {
       sucesso: false,
-      erro: "Falha ao ler PDF",
-      detalhe: err.message,
+      erro: "Falha ao processar PDF",
+      detalhe: err.message
     };
   }
 });
