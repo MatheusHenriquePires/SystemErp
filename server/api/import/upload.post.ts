@@ -2,25 +2,35 @@ import formidable from "formidable";
 import fs from "fs";
 import pdf from "pdf-parse";
 
+// Desliga o bodyParser do Nitro para permitir multipart
 export default defineEventHandler(async (event) => {
   try {
-    // Ativa leitura de FormData (upload)
-    const form = formidable({ multiples: false });
-    const [fields, files] = await form.parse(event.node.req);
+    const form = formidable({
+      multiples: false,
+      keepExtensions: true,
+      maxFileSize: 50 * 1024 * 1024, // 50MB
+    });
 
-    if (!files.file) {
+    const req = event.node.req;
+
+    const dataForm = await new Promise((resolve, reject) => {
+      form.parse(req, (err, fields, files) => {
+        if (err) reject(err);
+        else resolve({ fields, files });
+      });
+    });
+
+    if (!dataForm.files.file) {
       return { sucesso: false, mensagem: "Nenhum arquivo enviado." };
     }
 
-    const filePath = files.file[0].filepath;
-    const fileBuffer = fs.readFileSync(filePath);
+    const file = dataForm.files.file[0];
+    const buffer = fs.readFileSync(file.filepath);
 
-    // LÊ O PDF COMPLETO PARA TEXTO
-    const data = await pdf(fileBuffer);
+    const info = await pdf(buffer);
 
-    const texto = data.text;
+    const texto = info.text;
 
-    // EXTRAI ITENS COM PADRÕES: nome + preço (R$ XX,XX)
     const regex = /(.*?)(R\$ ?\d{1,3}(?:\.\d{3})*,\d{2})/g;
 
     const items = [];
@@ -43,14 +53,14 @@ export default defineEventHandler(async (event) => {
 
     return {
       sucesso: true,
-      paginas: data.numpages,
+      paginas: info.numpages,
       items,
     };
   } catch (e) {
-    console.error("ERRO AO PROCESSAR PDF:", e);
+    console.error("ERRO AO PROCESSAR:", e);
     return {
       sucesso: false,
-      mensagem: "Erro ao processar PDF",
+      mensagem: "Erro interno",
       erro: e.message,
     };
   }
