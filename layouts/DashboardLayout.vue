@@ -1,11 +1,10 @@
 <template>
   <div class="flex min-h-screen bg-slate-50 font-sans text-slate-900">
     
-    <aside class="w-64 bg-white border-r border-slate-200 hidden md:flex flex-col">
-      <div class="p-6 flex items-center gap-2 border-b border-slate-100">
-        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">N</div>
-        <span class="font-bold text-xl tracking-tight text-blue-900">NetMark ERP</span>
-      </div>
+     <aside class="w-64 bg-white border-r border-slate-200 hidden md:flex flex-col">
+     <div class="p-6 flex items-center gap-3 border-b border-slate-100">
+  <img src="/logo.png" alt="Logo NetMark" class="h-10 w-auto object-contain" />
+     </div>
 
 <nav class="flex-1 p-4 space-y-1">
   <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 mt-2">Gestão</p>
