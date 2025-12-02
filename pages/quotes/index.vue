@@ -36,7 +36,9 @@
                 R$ {{ Number(quote.valor_total).toFixed(2) }}
               </td>
               <td class="px-6 py-4 text-center">
-                <button class="text-blue-600 hover:underline text-xs">Ver PDF</button>
+                <NuxtLink :to="`/quotes/${quote.id}`" class="text-blue-600 hover:underline text-xs font-bold">
+               Abrir PDF 📄
+             </NuxtLink>
               </td>
             </tr>
             <tr v-if="!quotes || quotes.length === 0">
