@@ -1,35 +1,30 @@
-import pdfParse from 'pdf-parse';
+import { defineEventHandler, readMultipartFormData } from 'h3';
+import pdfParse from 'pdf-parse/lib/pdf-parse.js';
 
 export default defineEventHandler(async (event) => {
   const form = await readMultipartFormData(event);
 
-  if (!form || !form.length) {
-    return { error: true, message: "Nenhum arquivo enviado" };
+  if (!form || form.length === 0) {
+    return { error: true, message: "Nenhum arquivo enviado." };
   }
 
-  const file = form.find((f) => f.name === "file");
+  const file = form.find((f) => f.type && f.filename);
 
   if (!file) {
-    return { error: true, message: "Arquivo não encontrado no formulário" };
+    return { error: true, message: "Arquivo inválido." };
   }
 
   try {
     const data = await pdfParse(file.data);
-    const text = data.text;
-
-    const regex = /R\$ ?\d{1,3}(?:\.\d{3})*,\d{2}/g;
-    const prices = text.match(regex) || [];
 
     return {
       sucesso: true,
       paginas: data.numpages,
-      precos: prices
+      texto: data.text,
     };
-  } catch (error) {
-    return {
-      error: true,
-      message: error.message || "Erro ao processar PDF"
-      
-    };
+
+  } catch (err) {
+    console.error("Erro ao processar PDF:", err);
+    return { error: true, message: "Erro ao ler PDF." };
   }
 });
