@@ -1,27 +1,37 @@
 import { defineEventHandler, readMultipartFormData, createError } from 'h3'
+import { createRequire } from 'module'
 
 export default defineEventHandler(async (event) => {
-    console.log("--- INICIANDO UPLOAD DIAGNÓSTICO ---")
+    console.log("--- UPLOAD DE PDF (CORREÇÃO DE IMPORT) ---")
+
+    // 1. Carregamento Blindado da Biblioteca
+    let pdfParse
+    try {
+        const require = createRequire(import.meta.url)
+        const lib = require('pdf-parse')
+        
+        // AQUI ESTÁ A CORREÇÃO DO ERRO:
+        // Se 'lib' já for a função, usa ela. Se tiver .default, usa o .default.
+        pdfParse = typeof lib === 'function' ? lib : lib.default
+        
+    } catch (libError) {
+        console.error("Erro ao carregar pdf-parse:", libError)
+        throw createError({ statusCode: 500, message: 'Biblioteca de PDF não instalada.' })
+    }
+
+    // 2. Ler arquivo
+    const files = await readMultipartFormData(event)
+    if (!files || files.length === 0) {
+        throw createError({ statusCode: 400, message: 'Nenhum arquivo enviado.' })
+    }
+    const pdfFile = files[0]
 
     try {
-        // 1. TENTATIVA DE CARREGAR A BIBLIOTECA
-        const pdfParser = await import('pdf-parse')
-        console.log("Biblioteca pdf-parse carregada com sucesso.")
-
-        // 2. RECEBER ARQUIVO
-        const files = await readMultipartFormData(event)
-        if (!files || files.length === 0) {
-            throw createError({ statusCode: 400, message: 'Nenhum arquivo enviado.' })
-        }
-
-        const pdfFile = files[0]
-        console.log(`Arquivo recebido: ${pdfFile.filename} (${pdfFile.data.length} bytes)`)
-
-        // 3. TENTATIVA DE PARSE
-        const data = await pdfParser.default(pdfFile.data)
+        // 3. Processar PDF
+        const data = await pdfParse(pdfFile.data)
         const text = data.text
 
-        // 4. PROCESSAMENTO (Lógica de Negócio)
+        // 4. Extrair Produtos
         const lines = text.split('\n')
         const items = []
 
@@ -42,9 +52,9 @@ export default defineEventHandler(async (event) => {
                 if (name.length > 2 && cost > 0) {
                     items.push({
                         name: name,
-                        cost: cost,
-                        markup: 40,
-                        price: cost * 1.4,
+                        preco_custo: cost,
+                        margem_lucro: 40,
+                        preco: cost * 1.4,
                         tipo: 'produto'
                     })
                 }
@@ -53,15 +63,11 @@ export default defineEventHandler(async (event) => {
 
         return { success: true, items: items }
 
-    } catch (error: unknown) {
+    } catch (error) {
         console.error("ERRO NO PARSE:", error)
-        let message = 'Erro desconhecido'
-        if (error instanceof Error) {
-            message = error.message
-        }
         throw createError({ 
             statusCode: 500, 
-            message: `Erro ao ler o conteúdo do PDF: ${message}` 
+            message: `Erro ao ler PDF: ${error.message}` 
         })
     }
 })
