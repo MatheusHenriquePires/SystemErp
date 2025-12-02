@@ -16,8 +16,35 @@ export default defineEventHandler(async (event) => {
       apiKey: process.env.OPENAI_API_KEY
     });
 
-    // 🔥 ENVIA O PDF COMPLETO DIRETO PARA O GPT-4O VISION
-    const completion = await client.chat.completions.create({
+    // PROMPT DEFINITIVO — DENTRO DE CRASE — SEGURO
+    const prompt = `
+Você é um especialista em leitura de orçamentos de fornecedores (chapas, ferragens, MDF, dobradiças e itens de marcenaria).  
+Seu objetivo é extrair SOMENTE produtos comercializáveis.  
+
+Leia TODAS as páginas do PDF enviado acima e gere um JSON puro, sem texto fora do JSON, no formato:
+
+[
+  {
+    "name": "Nome completo e claro do item",
+    "cost": 0,
+    "markup": 40,
+    "price": 0
+  }
+]
+
+REGRAS IMPORTANTES:
+1. Identifique um produto apenas quando tiver nome + preço.
+2. Forme nomes completos: categoria + tipo + espessura + dimensão + detalhes.
+3. Preços podem estar como: "92,00", "R$ 178,50", "12.90", etc.
+4. Converter para número: 92.00
+5. markup = 40
+6. price = cost * 1.4
+7. Ignore: cabeçalhos, rodapés, logos, totais, frete, notas.
+8. Não duplique itens.
+9. Se nenhuma linha for encontrada, retorne [].
+`;
+
+    const response = await client.chat.completions.create({
       model: "gpt-4o-mini-vision",
       temperature: 0,
       max_tokens: 8000,
@@ -31,49 +58,7 @@ export default defineEventHandler(async (event) => {
             },
             {
               type: "text",
-              text: `
-Você é um especialista em leitura de orçamentos de fornecedores (chapas, ferragens, MDF, dobradiças e itens de marcenaria).  
-Seu objetivo é extrair SOMENTE produtos comercializáveis.  
-
-Leia TODAS as páginas do PDF enviado, detecte tabelas, colunas e padrões de preços, e gere um JSON **PURO**, SEM TEXTO FORA DO JSON, no formato:
-
-[
-  {
-    "name": "Nome completo e claro do item",
-    "cost": 0,
-    "markup": 40,
-    "price": 0
-  }
-]
-
-REGRAS OBRIGATÓRIAS:
-
-1. **Identifique um produto apenas quando tiver nome + preço**.
-2. Seja inteligente com nomes:
-   - Inclua a categoria: ("Chapa MDF", "Dobradiça", "Parafuso", "Corrediça")
-   - Inclua espessura e dimensões se existirem: (6mm, 15mm, 2,75x1,83)
-   - Inclua o tipo: (Cru, Branco, Texturizado, Fosco)
-3. Extraia o preço corretamente:
-   - Formatos válidos: "92,00", "R$ 178,50", "178.50", "12,90 un", "R$25,00"
-   - Converter para número: 92.00
-4. Campos obrigatórios:
-   - "name": string clara
-   - "cost": número
-   - "markup": SEMPRE 40
-   - "price": cost * 1.4
-5. Nunca repita linhas ou itens.
-6. Ignore completamente:
-   - Cabeçalhos
-   - Rodapés
-   - Numeração de página
-   - Logo, CNPJ, telefone
-   - Totais gerais ("TOTAL", "SOMA", "PEDIDO")
-7. Se o PDF contiver variações do mesmo produto (ex: 6mm, 9mm, 15mm), gerar itens separados.
-8. Se alguma página não tiver itens, ignore.
-9. Retorne **apenas JSON puro**, sem comentários, sem explicações.
-
-Se nenhum produto for encontrado, retorne: []
-
+              text: prompt
             }
           ]
         }
@@ -81,19 +66,19 @@ Se nenhum produto for encontrado, retorne: []
     });
 
     let items = [];
-    let content = completion.choices[0].message?.content || "[]";
 
     try {
-      items = JSON.parse(content);
-    } catch (e) {
-      console.error("Falha ao converter JSON", content);
+      const raw = response.choices[0].message?.content || "[]";
+      items = JSON.parse(raw);
+    } catch (err) {
+      console.error("Falha ao converter JSON:", err);
       items = [];
     }
 
     return { items };
 
-  } catch (e) {
-    console.error("ERRO:", e);
+  } catch (error) {
+    console.error("Erro no importador:", error);
     return { items: [] };
   }
 });
