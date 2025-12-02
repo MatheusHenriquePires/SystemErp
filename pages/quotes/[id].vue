@@ -12,7 +12,10 @@
       </div>
 
       <div v-if="pending" class="text-center py-20 text-slate-500">Carregando...</div>
-      <div v-else-if="!quote" class="text-center py-20 text-red-500">Orçamento não encontrado.</div>
+
+      <div v-else-if="!quote" class="text-center py-20 text-red-500">
+        Orçamento não encontrado.
+      </div>
 
       <div v-else class="bg-white p-12 shadow-2xl rounded-sm border border-gray-200 print-area" id="documento">
         
@@ -20,7 +23,7 @@
           <div>
             <h1 class="text-3xl font-bold text-slate-900 mb-2">{{ quote.empresa_nome || 'Agência NetMark' }}</h1>
             <p class="text-slate-500 text-sm">Orçamento #{{ quote.id }}</p>
-            <p class="text-slate-500 text-sm">Data: {{ formatarData(quote.quote_date) }}</p>
+            <p class="text-slate-500 text-sm">Data: {{ new Date(quote.quote_date).toLocaleDateString('pt-BR') }}</p>
           </div>
           <div class="text-right">
             <h2 class="text-lg font-bold text-slate-700">Cliente</h2>
@@ -80,11 +83,6 @@ const { data: quote, pending } = await useFetch(`/api/quotes/${route.params.id}`
 
 function formatarMoeda(val) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(val || 0));
-}
-
-function formatarData(dataISO) {
-  if (!dataISO) return '--/--/----';
-  return new Date(dataISO).toLocaleDateString('pt-BR');
 }
 
 function imprimir() {

@@ -27,7 +27,7 @@
               <td class="px-6 py-4">{{ quote.cliente_nome || 'Cliente Manual' }}</td>
               
               <td class="px-6 py-4 text-slate-500">
-                {{ formatarData(quote.data_venda) }}
+                {{ formatarData(quote.quote_date) }}
               </td>
               
               <td class="px-6 py-4">
@@ -37,7 +37,7 @@
               </td>
               
               <td class="px-6 py-4 text-right font-bold text-emerald-600">
-                {{ formatarMoeda(quote.valor_total) }}
+                {{ formatarMoeda(quote.total_amount) }}
               </td>
               
               <td class="px-6 py-4 text-center">
@@ -64,7 +64,6 @@ import DashboardLayout from '~/layouts/DashboardLayout.vue';
 
 const { data: quotes, refresh } = await useFetch('/api/quotes');
 
-// Funções de formatação para não dar erro visual
 const formatarMoeda = (valor) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(valor || 0));
 }
