@@ -1,4 +1,4 @@
-import { defineNuxtConfig } from 'nuxt/config';
+import { defineNuxtConfig } from 'nuxt/config'
 
 export default defineNuxtConfig({
   modules: ['@nuxtjs/tailwindcss'],
@@ -14,19 +14,14 @@ export default defineNuxtConfig({
 
   nitro: {
     preset: 'node-server',
-
-    // 👇 IMPORTANTE: garante que pdf-parse funcione no build Nitro
     externals: {
-      inline: ['pdf-parse'],
-    },
-
-    // 👇 IMPORTANTE: permite envio de PDF no body sem erro
-    routeRules: {
-      '/api/import/**': {
-        bodyParser: false,
-      }
+      inline: [
+        'pdfjs-dist',
+        'pdfjs-dist/build/pdf.worker.js',
+        'pdfjs-dist/legacy/build/pdf.js'
+      ]
     }
   },
 
   devtools: { enabled: true },
-});
+})
