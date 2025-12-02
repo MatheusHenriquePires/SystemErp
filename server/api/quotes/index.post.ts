@@ -1,72 +1,66 @@
-// server/api/quotes/index.post.ts
 import sql from '~/server/database'
 import { defineEventHandler, readBody, getCookie, createError } from 'h3'
 
 export default defineEventHandler(async (event) => {
-    // 1. AUTENTICAÇÃO E PREPARAÇÃO
+    // 1. AUTENTICAÇÃO
     const cookie = getCookie(event, 'usuario_sessao')
     if (!cookie) { throw createError({ statusCode: 401, message: 'Não autorizado' }) }
     const usuario = JSON.parse(cookie)
     const empresaId = usuario.empresa_id
 
-    const { customerId, paymentTerms, items } = await readBody(event)
+    // 2. RECEBIMENTO DOS DADOS
+    const body = await readBody(event)
+    const { customerId, paymentTerms, items } = body
 
-    if (!customerId || !items || items.length === 0) {
-        throw createError({ statusCode: 400, message: 'Dados insuficientes para o orçamento.' })
+    // Log para Debug (Veja no terminal do Easypanel se der erro)
+    console.log('Tentando criar orçamento:', { customerId, paymentTerms, itemsCount: items?.length })
+
+    // Validação básica
+    if (!customerId) {
+        throw createError({ statusCode: 400, message: 'Cliente não selecionado.' })
+    }
+    if (!items || items.length === 0) {
+        throw createError({ statusCode: 400, message: 'O orçamento não tem itens.' })
     }
 
-    // 2. CÁLCULO TOTAL
+    // 3. CÁLCULO DO TOTAL
     let totalAmount = 0
     items.forEach(item => {
-        totalAmount += item.quantity * item.unitPrice
+        totalAmount += Number(item.quantity) * Number(item.unitPrice)
     })
     
-    let quoteId: number | null = null;
-
+    // 4. TRANSAÇÃO NO BANCO
     try {
-        // INICIA TRANSAÇÃO (Garante que se falhar no meio, nada é salvo)
-        await sql.begin(async (sql) => {
-
-            // 3. INSERIR O CABEÇALHO (MASTER)
-            const [quoteResult] = await sql`
-                INSERT INTO quotes (customer_id, total_amount, payment_terms)
-                VALUES (${customerId}, ${totalAmount}, ${paymentTerms})
+        const result = await sql.begin(async (sql) => {
+            // Inserir Cabeçalho
+            const [quote] = await sql`
+                INSERT INTO quotes (customer_id, total_amount, payment_terms, status)
+                VALUES (${customerId}, ${totalAmount}, ${paymentTerms}, 'draft')
                 RETURNING id
-            `;
-            quoteId = quoteResult.id;
-
-            // 4. INSERIR OS ITENS DA VENDA (DETAIL)
+            `
+            
+            // Inserir Itens
             for (const item of items) {
-                const itemTotal = item.quantity * item.unitPrice;
                 await sql`
                     INSERT INTO quote_items (quote_id, material_id, name, quantity, unit_price, total_price)
                     VALUES (
-                        ${quoteId},
-                        ${item.materialId},
+                        ${quote.id},
+                        ${item.materialId || null}, -- Pode ser nulo se for item avulso
                         ${item.materialName},
                         ${item.quantity},
                         ${item.unitPrice},
-                        ${itemTotal}
+                        ${item.quantity * item.unitPrice}
                     )
-                `;
+                `
             }
+            
+            return quote
+        })
 
-            // 5. REGISTRAR NO FINANCEIRO (Opcional, mas crucial para o ERP)
-            await sql`
-                INSERT INTO despesas (descricao, valor, categoria, empresa_id)
-                VALUES (
-                    ${'Orçamento #' + quoteId},
-                    ${totalAmount},
-                    'Vendas - Orçamento',
-                    ${empresaId}
-                )
-            `;
-        });
-        
-        return { success: true, quoteId: quoteId, total: totalAmount }
-        
+        return { success: true, quoteId: result.id, total: totalAmount }
+
     } catch (error) {
-        console.error("Erro na Transação de Orçamento:", error);
-        throw createError({ statusCode: 500, message: 'Erro ao processar o orçamento. A transação foi cancelada.' })
+        console.error("ERRO SQL:", error) // Isso vai mostrar o erro real no log
+        throw createError({ statusCode: 500, message: 'Erro ao salvar no banco de dados.' })
     }
 })
