@@ -208,7 +208,8 @@ async function submitQuote() {
     alert('❌ Erro ao salvar orçamento. Verifique se todos os campos estão preenchidos.');
   } finally {
     isSubmitting.value = false;
-    
+
   }
 }
+// Forçando atualização do Git
 </script>
