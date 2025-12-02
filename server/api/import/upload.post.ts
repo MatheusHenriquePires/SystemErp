@@ -1,77 +1,75 @@
 import { readMultipartFormData } from "h3";
 import OpenAI from "openai";
+import pdf2img from "pdf-img-convert";
 
 export default defineEventHandler(async (event) => {
   try {
     const form = await readMultipartFormData(event);
     const file = form?.[0];
 
-    if (!file) {
-      return { items: [] };
-    }
+    if (!file) return { items: [] };
 
-    // PDF -> base64
-    const base64 = file.data.toString("base64");
+    // Converte PDF para imagens
+    const pages = await pdf2img.convert(file.data);
 
     const client = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY
     });
 
-    // 🔥 1. Envia o PDF para a IA
-    const completion = await client.chat.completions.create({
-      model: "gpt-4o-mini-vision",
-      temperature: 0,
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "input_image",
-              image_url: `data:application/pdf;base64,${base64}`
-            },
-            {
-              type: "text",
-              text: `
-Leia o PDF e extraia itens de orçamento.  
-Retorne SOMENTE no formato JSON:
+    let allItems = [];
+
+    for (const page of pages) {
+      const base64 = Buffer.from(page).toString("base64");
+
+      const completion = await client.chat.completions.create({
+        model: "gpt-4o-mini-vision",
+        temperature: 0,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "input_image",
+                image_url: `data:image/png;base64,${base64}`,
+              },
+              {
+                type: "text",
+                text: `
+Leia a imagem como se fosse uma página de orçamento.
+Extraia nome do item + preço.  
+Retorne somente JSON no formato:
 
 [
   {
-    "name": "Nome do item",
+    "name": "Nome do produto",
     "cost": 0,
     "markup": 40,
     "price": 0
   }
 ]
 
-Regras:
-- O campo "name" deve ser explícito: categoria + item + dimensões se existirem.
-- "cost" deve ser sempre número (ex: R$ 92,00 -> 92.00).
-- "markup" = 40 sempre.
-- "price" = cost * 1.4
-- Se encontrar 0 itens, retorne "[]".
+Se não existir nenhum item na página, retorne [].
 `
-            }
-          ]
-        }
-      ]
-    });
+              }
+            ]
+          }
+        ]
+      });
 
-    // 🔥 2. Decodifica o JSON
-    const raw = completion.choices[0].message?.content || "[]";
+      let parsed = [];
+      try {
+        parsed = JSON.parse(completion.choices[0].message?.content || "[]");
+      } catch (e) {
+        parsed = [];
+      }
 
-    let items = [];
-    try {
-      items = JSON.parse(raw);
-    } catch (e) {
-      console.error("Erro ao parsear JSON:", raw);
-      return { items: [] };
+      allItems.push(...parsed);
     }
 
-    return { items };
+    return { items: allItems };
 
-  } catch (error) {
-    console.error(error);
+  } catch (e) {
+    console.error(e);
     return { items: [] };
   }
 });
