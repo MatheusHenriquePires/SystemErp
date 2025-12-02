@@ -2,73 +2,53 @@
   <DashboardLayout>
     <div class="p-8 max-w-4xl mx-auto">
       
-      <div class="mb-8 flex justify-between items-center no-print">
-        <NuxtLink to="/quotes" class="text-slate-500 hover:text-slate-700 flex items-center gap-2">
-          ← Voltar
-        </NuxtLink>
-        <button v-if="quote" @click="imprimir" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold shadow-lg hover:bg-blue-700 flex items-center gap-2">
-          🖨️ Imprimir
+      <div class="mb-6 flex justify-between no-print">
+        <NuxtLink to="/quotes" class="text-gray-500">← Voltar</NuxtLink>
+        <button @click="print" class="bg-blue-600 text-white px-6 py-2 rounded font-bold">
+          Imprimir
         </button>
       </div>
 
-      <div v-if="pending" class="text-center py-20 text-slate-500">Carregando...</div>
-
-      <div v-else-if="!quote" class="text-center py-20 text-red-500">
-        Orçamento não encontrado.
-      </div>
-
-      <div v-else class="bg-white p-12 shadow-2xl rounded-sm border border-gray-200 print-area" id="documento">
+      <div v-if="dados" class="bg-white p-12 shadow-lg border print-area">
         
-        <div class="flex justify-between items-start mb-12 border-b pb-8">
+        <div class="flex justify-between border-b pb-8 mb-8">
           <div>
-            <h1 class="text-3xl font-bold text-slate-900 mb-2">{{ quote.empresa_nome || 'Agência NetMark' }}</h1>
-            <p class="text-slate-500 text-sm">Orçamento #{{ quote.id }}</p>
-            <p class="text-slate-500 text-sm">Data: {{ new Date(quote.quote_date).toLocaleDateString('pt-BR') }}</p>
+            <h1 class="text-2xl font-bold">{{ dados.cabecalho.empresa_nome || 'Agência NetMark' }}</h1>
+            <p class="text-gray-500">Orçamento #{{ dados.cabecalho.id }}</p>
+            <p class="text-gray-500">{{ new Date(dados.cabecalho.quote_date).toLocaleDateString('pt-BR') }}</p>
           </div>
           <div class="text-right">
-            <h2 class="text-lg font-bold text-slate-700">Cliente</h2>
-            <p class="text-slate-600 font-medium">{{ quote.cliente_nome }}</p>
-            <p class="text-slate-500 text-sm">{{ quote.cliente_email }}</p>
-            <p class="text-slate-500 text-sm">{{ quote.cliente_telefone }}</p>
-            <p class="text-slate-500 text-sm uppercase">{{ quote.cliente_cidade }}</p>
+            <h2 class="font-bold">Cliente</h2>
+            <p>{{ dados.cabecalho.cliente_nome }}</p>
+            <p class="text-sm text-gray-500">{{ dados.cabecalho.cliente_email }}</p>
+            <p class="text-sm text-gray-500">{{ dados.cabecalho.cliente_telefone }}</p>
           </div>
         </div>
 
-        <table class="w-full mb-8">
-          <thead class="bg-slate-50 text-slate-600 border-b-2 border-slate-200">
+        <table class="w-full mb-8 text-sm">
+          <thead class="bg-gray-100">
             <tr>
-              <th class="py-3 text-left pl-4">Descrição</th>
-              <th class="py-3 text-center">Qtd</th>
-              <th class="py-3 text-right">Unitário</th>
-              <th class="py-3 text-right pr-4">Total</th>
+              <th class="p-2 text-left">Descrição</th>
+              <th class="p-2 text-center">Qtd</th>
+              <th class="p-2 text-right">Unit.</th>
+              <th class="p-2 text-right">Total</th>
             </tr>
           </thead>
-          <tbody class="text-slate-700 text-sm">
-            <tr v-for="item in quote.items" :key="item.name" class="border-b border-slate-100">
-              <td class="py-3 pl-4 font-medium">{{ item.name }}</td>
-              <td class="py-3 text-center">{{ Number(item.quantity) }}</td>
-              <td class="py-3 text-right">{{ formatarMoeda(item.unit_price) }}</td>
-              <td class="py-3 text-right pr-4 font-bold">{{ formatarMoeda(item.total_price) }}</td>
+          <tbody>
+            <tr v-for="item in dados.itens" :key="item.name" class="border-b">
+              <td class="p-2">{{ item.name }}</td>
+              <td class="p-2 text-center">{{ Number(item.quantity) }}</td>
+              <td class="p-2 text-right">R$ {{ Number(item.unit_price).toFixed(2) }}</td>
+              <td class="p-2 text-right font-bold">R$ {{ Number(item.total_price).toFixed(2) }}</td>
             </tr>
           </tbody>
         </table>
 
-        <div class="flex justify-end pt-4">
-          <div class="w-1/2">
-            <div class="flex justify-between py-2 border-b border-slate-100">
-              <span class="text-slate-600">Condição:</span>
-              <span class="font-medium">{{ quote.payment_terms }}</span>
-            </div>
-            <div class="flex justify-between py-4 text-xl font-bold text-slate-900">
-              <span>Total Geral:</span>
-              <span>{{ formatarMoeda(quote.total_amount) }}</span>
-            </div>
-          </div>
+        <div class="text-right text-xl font-bold">
+          Total: R$ {{ Number(dados.cabecalho.total_amount).toFixed(2) }}
         </div>
-
-        <div class="mt-16 pt-8 border-t text-center text-slate-400 text-xs flex justify-between">
-          <span>Assinatura do Cliente</span>
-          <span>Assinatura do Responsável</span>
+        <div class="text-right text-sm text-gray-500 mt-1">
+          Condição: {{ dados.cabecalho.payment_terms }}
         </div>
 
       </div>
@@ -79,22 +59,14 @@
 <script setup>
 import DashboardLayout from '~/layouts/DashboardLayout.vue';
 const route = useRoute();
-const { data: quote, pending } = await useFetch(`/api/quotes/${route.params.id}`);
+const { data: dados } = await useFetch(`/api/quotes/${route.params.id}`);
 
-function formatarMoeda(val) {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(val || 0));
-}
-
-function imprimir() {
-  window.print();
-}
+function print() { window.print() }
 </script>
 
 <style>
 @media print {
-  body * { visibility: hidden; }
-  .print-area, .print-area * { visibility: visible; }
-  .print-area { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; border: none; box-shadow: none; }
-  aside, .no-print { display: none !important; }
+  .no-print, aside { display: none !important; }
+  .print-area { box-shadow: none; border: none; }
 }
 </style>

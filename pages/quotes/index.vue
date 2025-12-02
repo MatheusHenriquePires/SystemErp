@@ -2,55 +2,39 @@
   <DashboardLayout>
     <div class="p-8">
       <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-slate-800">📄 Orçamentos</h1>
-        <NuxtLink to="/quotes/new" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium shadow-sm hover:bg-blue-700 transition">
-          + Novo Orçamento
+        <h1 class="text-3xl font-bold text-slate-800">Orçamentos</h1>
+        <NuxtLink to="/quotes/new" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold">
+          + Novo
         </NuxtLink>
       </div>
 
-      <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+      <div class="bg-white border rounded-xl shadow overflow-hidden">
         <table class="w-full text-sm text-left">
-          <thead class="bg-slate-50 border-b border-slate-200 text-slate-500">
+          <thead class="bg-slate-50 border-b">
             <tr>
-              <th class="px-6 py-4 font-medium">ID</th>
-              <th class="px-6 py-4 font-medium">Cliente</th>
-              <th class="px-6 py-4 font-medium">Data</th>
-              <th class="px-6 py-4 font-medium">Status</th>
-              <th class="px-6 py-4 font-medium text-right">Valor Total</th>
-              <th class="px-6 py-4 text-center">Ações</th>
+              <th class="px-6 py-3">ID</th>
+              <th class="px-6 py-3">Cliente</th>
+              <th class="px-6 py-3">Data</th>
+              <th class="px-6 py-3 text-right">Total</th>
+              <th class="px-6 py-3 text-center">Ação</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
-            <tr v-for="quote in quotes" :key="quote.id" class="hover:bg-slate-50 transition">
-              <td class="px-6 py-4 font-bold text-slate-700">#{{ quote.id }}</td>
-              
-              <td class="px-6 py-4">{{ quote.cliente_nome || 'Cliente Manual' }}</td>
-              
-              <td class="px-6 py-4 text-slate-500">
-                {{ formatarData(quote.quote_date) }}
+          <tbody>
+            <tr v-for="q in quotes" :key="q.id" class="border-b hover:bg-slate-50">
+              <td class="px-6 py-3 font-bold">#{{ q.id }}</td>
+              <td class="px-6 py-3">{{ q.cliente_nome }}</td>
+              <td class="px-6 py-3">{{ new Date(q.quote_date).toLocaleDateString('pt-BR') }}</td>
+              <td class="px-6 py-3 text-right font-bold text-green-600">
+                R$ {{ Number(q.total_amount).toFixed(2) }}
               </td>
-              
-              <td class="px-6 py-4">
-                <span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-bold uppercase">
-                  {{ quote.status }}
-                </span>
-              </td>
-              
-              <td class="px-6 py-4 text-right font-bold text-emerald-600">
-                {{ formatarMoeda(quote.total_amount) }}
-              </td>
-              
-              <td class="px-6 py-4 text-center">
-                <NuxtLink :to="`/quotes/${quote.id}`" class="text-blue-600 hover:underline text-xs font-bold">
-                  Ver PDF
+              <td class="px-6 py-3 text-center">
+                <NuxtLink :to="`/quotes/${q.id}`" class="text-blue-600 font-bold hover:underline">
+                  Abrir PDF
                 </NuxtLink>
               </td>
             </tr>
-            <tr v-if="!quotes || quotes.length === 0">
-              <td colspan="6" class="px-6 py-12 text-center text-slate-400">
-                <p class="text-lg">Nenhum orçamento encontrado.</p>
-                <p class="text-sm">Clique em "Novo Orçamento" para começar.</p>
-              </td>
+            <tr v-if="!quotes?.length">
+              <td colspan="5" class="p-8 text-center text-gray-500">Nada encontrado.</td>
             </tr>
           </tbody>
         </table>
@@ -61,19 +45,7 @@
 
 <script setup>
 import DashboardLayout from '~/layouts/DashboardLayout.vue';
-
 const { data: quotes, refresh } = await useFetch('/api/quotes');
 
-const formatarMoeda = (valor) => {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(valor || 0));
-}
-
-const formatarData = (dataISO) => {
-  if (!dataISO) return '-';
-  return new Date(dataISO).toLocaleDateString('pt-BR');
-}
-
-onMounted(() => {
-  refresh();
-});
+onMounted(() => refresh());
 </script>
