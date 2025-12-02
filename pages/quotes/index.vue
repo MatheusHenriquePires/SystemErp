@@ -23,22 +23,27 @@
           <tbody class="divide-y divide-slate-100">
             <tr v-for="quote in quotes" :key="quote.id" class="hover:bg-slate-50 transition">
               <td class="px-6 py-4 font-bold text-slate-700">#{{ quote.id }}</td>
-              <td class="px-6 py-4">{{ quote.cliente_nome }}</td>
+              
+              <td class="px-6 py-4">{{ quote.cliente_nome || 'Cliente Manual' }}</td>
+              
               <td class="px-6 py-4 text-slate-500">
-                {{ new Date(quote.data_venda).toLocaleDateString() }}
+                {{ formatarData(quote.data_venda) }}
               </td>
+              
               <td class="px-6 py-4">
                 <span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-bold uppercase">
                   {{ quote.status }}
                 </span>
               </td>
+              
               <td class="px-6 py-4 text-right font-bold text-emerald-600">
-                R$ {{ Number(quote.valor_total).toFixed(2) }}
+                {{ formatarMoeda(quote.valor_total) }}
               </td>
+              
               <td class="px-6 py-4 text-center">
                 <NuxtLink :to="`/quotes/${quote.id}`" class="text-blue-600 hover:underline text-xs font-bold">
-               Abrir PDF 📄
-             </NuxtLink>
+                  Ver PDF
+                </NuxtLink>
               </td>
             </tr>
             <tr v-if="!quotes || quotes.length === 0">
@@ -57,10 +62,18 @@
 <script setup>
 import DashboardLayout from '~/layouts/DashboardLayout.vue';
 
-// Busca os dados da API
 const { data: quotes, refresh } = await useFetch('/api/quotes');
 
-// Atualiza a lista sempre que entrar na página
+// Funções de formatação para não dar erro visual
+const formatarMoeda = (valor) => {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(valor || 0));
+}
+
+const formatarData = (dataISO) => {
+  if (!dataISO) return '-';
+  return new Date(dataISO).toLocaleDateString('pt-BR');
+}
+
 onMounted(() => {
   refresh();
 });
