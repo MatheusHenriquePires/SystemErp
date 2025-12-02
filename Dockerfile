@@ -45,5 +45,8 @@ ENV NITRO_PORT=3000
 
 EXPOSE 3000
 
+# Instala dependências de sistema para lidar com arquivos
+RUN apk add --no-cache python3 make g++
+
 # Inicia o server Nitro
 CMD ["node", ".output/server/index.mjs"]
