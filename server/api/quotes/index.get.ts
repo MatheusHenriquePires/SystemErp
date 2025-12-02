@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
     const usuario = JSON.parse(cookie)
 
     try {
-        // Busca orçamentos fazendo JOIN com clientes para filtrar pela empresa
+        // CORREÇÃO CRÍTICA: JOIN correto para filtrar pela empresa do cliente
         const quotes = await sql`
             SELECT 
                 q.id, 
@@ -21,11 +21,11 @@ export default defineEventHandler(async (event) => {
             ORDER BY q.id DESC
         `
         
-        // Mapeia para o formato que o frontend espera (snake_case para camelCase se precisar, ou mantém)
+        // Mapeia para garantir que o frontend receba os nomes certos
         return quotes.map(q => ({
             id: q.id,
             cliente_nome: q.cliente_nome,
-            data_venda: q.quote_date,
+            data_venda: q.quote_date, // Frontend espera 'data_venda' na tabela
             valor_total: Number(q.total_amount),
             status: q.status
         }))
