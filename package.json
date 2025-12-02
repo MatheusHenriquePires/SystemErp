@@ -17,6 +17,7 @@
     "pdf-lib": "^1.17.1",
     "pdf-parse": "^2.4.5",
     "pdf-text-reader": "^5.1.0",
+    "pdfjs-dist": "^5.4.449",
     "postgres": "^3.4.7",
     "vue3-apexcharts": "^1.10.0"
   },
