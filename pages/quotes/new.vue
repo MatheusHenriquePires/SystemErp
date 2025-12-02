@@ -12,16 +12,16 @@
             <div>
               <label class="block text-sm font-medium mb-1 text-slate-600">Cliente</label>
               <CustomerSelect v-model="quote.customerId" />
-              <p v-if="!quote.customerId" class="text-xs text-red-500 mt-1">* Obrigatório</p>
+              <p v-if="!quote.customerId" class="text-xs text-red-500 mt-1">* Selecione um cliente da lista</p>
             </div>
 
             <div>
               <label class="block text-sm font-medium mb-1 text-slate-600">Condição de Pagamento</label>
               <input 
                 v-model="quote.paymentTerms" 
-                class="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                class="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition" 
                 required 
-                placeholder="Ex: 3x Sem Juros / À Vista / 50% Entrada"
+                placeholder="Ex: À Vista / 50% Entrada + 30 dias"
               />
             </div>
           </div>
@@ -30,8 +30,8 @@
         <div class="bg-white p-6 rounded-xl shadow-lg border border-slate-200">
           <div class="flex justify-between items-center mb-4">
             <h2 class="text-xl font-semibold text-slate-700">Itens do Orçamento</h2>
-            <button type="button" @click="addItem" class="text-sm bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition shadow-sm font-medium">
-              + Adicionar Item
+            <button type="button" @click="addItem" class="text-sm bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition shadow-sm font-medium flex items-center gap-2">
+              <span>+</span> Adicionar Item
             </button>
           </div>
 
@@ -52,7 +52,7 @@
                   <td class="p-2">
                     <input 
                       v-model="item.materialName" 
-                      class="w-full border rounded p-2 focus:ring-blue-500 outline-none" 
+                      class="w-full border rounded p-2 focus:ring-blue-500 outline-none transition" 
                       placeholder="Ex: Armário de Cozinha MDF" 
                       required
                     />
@@ -64,7 +64,7 @@
                       type="number" 
                       step="0.01" 
                       min="0"
-                      class="w-full border rounded p-2 text-right focus:ring-blue-500 outline-none" 
+                      class="w-full border rounded p-2 text-right focus:ring-blue-500 outline-none transition" 
                       required 
                     />
                   </td>
@@ -75,7 +75,7 @@
                       type="number" 
                       step="0.01" 
                       min="0"
-                      class="w-full border rounded p-2 text-right focus:ring-blue-500 outline-none" 
+                      class="w-full border rounded p-2 text-right focus:ring-blue-500 outline-none transition" 
                       required 
                     />
                   </td>
@@ -110,10 +110,10 @@
           <button 
             type="submit" 
             :disabled="isSubmitting" 
-            class="bg-emerald-600 text-white py-3 px-8 rounded-xl hover:bg-emerald-700 font-bold shadow-lg transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            class="bg-blue-600 text-white py-3 px-8 rounded-xl hover:bg-blue-700 font-bold shadow-lg transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             <span v-if="isSubmitting" class="animate-spin">⏳</span>
-            {{ isSubmitting ? 'Processando...' : 'Gerar e Salvar Orçamento' }}
+            {{ isSubmitting ? 'Salvando...' : 'Gerar e Salvar Orçamento' }}
           </button>
         </div>
 
@@ -123,7 +123,6 @@
 </template>
 
 <script setup>
-// Importa explicitamente o Layout e o Componente para garantir que funcione
 import DashboardLayout from '~/layouts/DashboardLayout.vue';
 import CustomerSelect from '~/components/CustomerSelect.vue';
 
@@ -131,10 +130,9 @@ const router = useRouter();
 
 // Estado do formulário
 const quote = reactive({
-  customerId: '', // Isso receberá o ID do cliente do <CustomerSelect>
+  customerId: '', 
   paymentTerms: 'À Vista',
   items: [
-    // Item inicial padrão
     { materialId: null, materialName: '', quantity: 1, unitPrice: 0.00 },
   ],
 });
@@ -153,7 +151,6 @@ function addItem() {
 
 // Remover linha
 function removeItem(index) {
-  // Impede remover se só tiver 1 item (opcional, mas boa prática)
   if (quote.items.length > 1) {
     quote.items.splice(index, 1);
   } else {
@@ -164,7 +161,7 @@ function removeItem(index) {
 
 // Enviar para o Backend
 async function submitQuote() {
-  // Validações Básicas
+  // Validações
   if (totalGeral.value <= 0) {
     alert('O valor total do orçamento não pode ser zero.');
     return;
@@ -177,7 +174,7 @@ async function submitQuote() {
   isSubmitting.value = true;
 
   try {
-    // Prepara o objeto para enviar, garantindo que NÚMEROS sejam NÚMEROS
+    // Sanitização dos dados (Garante que números sejam números)
     const payload = {
       customerId: Number(quote.customerId), 
       paymentTerms: quote.paymentTerms,
@@ -198,16 +195,13 @@ async function submitQuote() {
 
     if (response.success) {
       alert(`✅ Orçamento #${response.quoteId} salvo com sucesso!`);
-      
-      // --- CORREÇÃO AQUI ---
-      // Redireciona para a LISTA DE ORÇAMENTOS (que existe)
-      // em vez de tentar abrir o detalhe (que não existe ainda)
+      // Redireciona para a LISTA de orçamentos
       router.push('/quotes'); 
     }
 
   } catch (error) {
     console.error('Erro ao salvar:', error);
-    alert('❌ Erro ao salvar orçamento. Verifique se todos os campos estão preenchidos.');
+    alert('❌ Erro ao salvar orçamento. Tente novamente.');
   } finally {
     isSubmitting.value = false;
   }
