@@ -3,35 +3,38 @@ import { defineEventHandler, getCookie, createError } from 'h3'
 
 export default defineEventHandler(async (event) => {
     const cookie = getCookie(event, 'usuario_sessao')
-    if (!cookie) return [] // Retorna vazio se não logado, sem erro 500
+    if (!cookie) throw createError({ statusCode: 401, message: 'Não autorizado' })
     const usuario = JSON.parse(cookie)
 
     try {
-        // CORREÇÃO: Usamos LEFT JOIN para trazer o orçamento mesmo se o cliente tiver problema
+        // QUERY CORRIGIDA:
+        // 1. Busca na tabela quotes (q)
+        // 2. Junta com clientes (c)
+        // 3. Filtra pela empresa do cliente
         const quotes = await sql`
             SELECT 
                 q.id, 
                 q.quote_date, 
                 q.total_amount, 
                 q.status,
-                COALESCE(c.name, 'Cliente Manual') as cliente_nome
+                c.name as cliente_nome
             FROM quotes q
-            LEFT JOIN clientes c ON q.customer_id = c.id
-            -- Removemos o filtro rigoroso de empresa por enquanto para você ver seus dados
-            -- WHERE c.empresa_id = ${usuario.empresa_id} 
+            JOIN clientes c ON q.customer_id = c.id
+            WHERE c.empresa_id = ${usuario.empresa_id}
             ORDER BY q.id DESC
         `
         
+        // Mapeamento seguro para o frontend
         return quotes.map(q => ({
             id: q.id,
             cliente_nome: q.cliente_nome,
             data_venda: q.quote_date,
-            valor_total: Number(q.total_amount),
-            status: q.status || 'rascunho'
+            valor_total: Number(q.total_amount), // Garante que é número
+            status: q.status
         }))
 
     } catch (e) {
-        console.error("Erro lista:", e)
+        console.error("Erro ao listar:", e)
         return []
     }
 })
