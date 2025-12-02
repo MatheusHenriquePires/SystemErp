@@ -16,7 +16,9 @@ export default defineNuxtConfig({
     preset: 'node-server',
     externals: {
       inline: [
+        'pdf-parse',
         'pdfjs-dist',
+        'pdfjs-dist/build/pdf.js',
         'pdfjs-dist/build/pdf.worker.js',
         'pdfjs-dist/legacy/build/pdf.js'
       ]
