@@ -1,67 +1,64 @@
-import formidable from "formidable";
-import fs from "fs";
-import pdf from "pdf-parse";
+import { defineEventHandler } from 'h3'
+import formidable from 'formidable'
+import fs from 'fs'
+import pdfParse from 'pdf-parse'
 
-// Desliga o bodyParser do Nitro para permitir multipart
+// Desabilita o body parser do Nitro
 export default defineEventHandler(async (event) => {
   try {
     const form = formidable({
       multiples: false,
       keepExtensions: true,
-      maxFileSize: 50 * 1024 * 1024, // 50MB
     });
 
-    const req = event.node.req;
-
-    const dataForm = await new Promise((resolve, reject) => {
-      form.parse(req, (err, fields, files) => {
+    // Parse multipart/form-data
+    const { files } = await new Promise((resolve, reject) => {
+      form.parse(event.node.req, (err, fields, files) => {
         if (err) reject(err);
-        else resolve({ fields, files });
+        resolve({ fields, files });
       });
     });
 
-    if (!dataForm.files.file) {
-      return { sucesso: false, mensagem: "Nenhum arquivo enviado." };
+    if (!files.file) {
+      return {
+        error: true,
+        message: "Nenhum arquivo enviado"
+      };
     }
 
-    const file = dataForm.files.file[0];
-    const buffer = fs.readFileSync(file.filepath);
+    const uploadedFile = Array.isArray(files.file)
+      ? files.file[0]
+      : files.file;
 
-    const info = await pdf(buffer);
+    const filePath = uploadedFile.filepath;
 
-    const texto = info.text;
+    // Lê o PDF
+    const pdfBuffer = fs.readFileSync(filePath);
+    const data = await pdfParse(pdfBuffer);
 
-    const regex = /(.*?)(R\$ ?\d{1,3}(?:\.\d{3})*,\d{2})/g;
+    const texto = data.text || "";
 
-    const items = [];
-    let match;
+    // Expressão para capturar preços
+    const regexPreco = /R\$ ?\d{1,3}(?:\.\d{3})*,\d{2}/g;
+    const precos = texto.match(regexPreco) || [];
 
-    while ((match = regex.exec(texto)) !== null) {
-      const nome = match[1].trim();
-      const precoStr = match[2].replace("R$", "").replace(/\./g, "").replace(",", ".").trim();
-      const preco = parseFloat(precoStr);
-
-      if (!isNaN(preco)) {
-        items.push({
-          name: nome,
-          cost: preco,
-          markup: 100,
-          price: preco * 2,
-        });
-      }
-    }
-
-    return {
+    // Monta retorno (ajuste conforme sua regra)
+    const response = {
       sucesso: true,
-      paginas: info.numpages,
-      items,
+      paginas: data.numpages,
+      textoExtraido: texto.substring(0, 1500), // Para não explodir payload
+      precosEncontrados: precos,
     };
-  } catch (e) {
-    console.error("ERRO AO PROCESSAR:", e);
+
+    return response;
+
+  } catch (err: any) {
+    console.error("Erro no upload.post.ts:", err);
+
     return {
-      sucesso: false,
-      mensagem: "Erro interno",
-      erro: e.message,
+      error: true,
+      message: "Erro ao processar PDF",
+      detalhe: err?.message,
     };
   }
 });

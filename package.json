@@ -5,7 +5,7 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev --port 4000",
-   "generate": "nuxt generate",
+    "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare"
   },
@@ -14,6 +14,7 @@
     "formidable": "^3.5.4",
     "jsonwebtoken": "^9.0.2",
     "openai": "^6.9.1",
+    "pdf-parse": "^2.4.5",
     "postgres": "^3.4.7",
     "vue3-apexcharts": "^1.10.0"
   },

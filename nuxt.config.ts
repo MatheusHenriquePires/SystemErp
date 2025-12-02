@@ -14,6 +14,18 @@ export default defineNuxtConfig({
 
   nitro: {
     preset: 'node-server',
+
+    // 👇 IMPORTANTE: garante que pdf-parse funcione no build Nitro
+    externals: {
+      inline: ['pdf-parse'],
+    },
+
+    // 👇 IMPORTANTE: permite envio de PDF no body sem erro
+    routeRules: {
+      '/api/import/**': {
+        bodyParser: false,
+      }
+    }
   },
 
   devtools: { enabled: true },
