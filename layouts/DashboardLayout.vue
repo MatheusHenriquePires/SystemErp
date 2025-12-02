@@ -4,6 +4,7 @@
      <aside class="w-64 bg-white border-r border-slate-200 hidden md:flex flex-col">
      <div class="p-6 flex items-center gap-3 border-b border-slate-100">
   <img src="/logo.png" alt="Logo NetMark" class="h-10 w-auto object-contain" />
+  <span class="font-bold text-xl tracking-tight text-blue-900">System ERP</span>
      </div>
 
 <nav class="flex-1 p-4 space-y-1">
