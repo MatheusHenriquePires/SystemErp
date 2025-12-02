@@ -32,27 +32,48 @@ export default defineEventHandler(async (event) => {
             {
               type: "text",
               text: `
-Você é um extrator profissional de orçamentos de fornecedores.
+Você é um especialista em leitura de orçamentos de fornecedores (chapas, ferragens, MDF, dobradiças e itens de marcenaria).  
+Seu objetivo é extrair SOMENTE produtos comercializáveis.  
 
-Leia TODAS as páginas do PDF enviado acima e extraia os produtos com os seguintes dados:
+Leia TODAS as páginas do PDF enviado, detecte tabelas, colunas e padrões de preços, e gere um JSON **PURO**, SEM TEXTO FORA DO JSON, no formato:
 
-{
-  "name": "Nome do item",
-  "cost": 0,
-  "markup": 40,
-  "price": 0
-}
+[
+  {
+    "name": "Nome completo e claro do item",
+    "cost": 0,
+    "markup": 40,
+    "price": 0
+  }
+]
 
-Regras obrigatórias:
-- Ignore datas, logos, cabeçalhos, notas, números de pedido.
-- Extraia apenas itens com nome + preço.
-- Normalize o nome (sem abreviações estranhas).
-- Converta R$ 92,00 → 92.00
-- markup FIXO = 40
-- price = cost * 1.4
-- Retorne SOMENTE JSON puro, sem texto fora do JSON.
-- Se não achar nenhum item, retorne [].
-`
+REGRAS OBRIGATÓRIAS:
+
+1. **Identifique um produto apenas quando tiver nome + preço**.
+2. Seja inteligente com nomes:
+   - Inclua a categoria: ("Chapa MDF", "Dobradiça", "Parafuso", "Corrediça")
+   - Inclua espessura e dimensões se existirem: (6mm, 15mm, 2,75x1,83)
+   - Inclua o tipo: (Cru, Branco, Texturizado, Fosco)
+3. Extraia o preço corretamente:
+   - Formatos válidos: "92,00", "R$ 178,50", "178.50", "12,90 un", "R$25,00"
+   - Converter para número: 92.00
+4. Campos obrigatórios:
+   - "name": string clara
+   - "cost": número
+   - "markup": SEMPRE 40
+   - "price": cost * 1.4
+5. Nunca repita linhas ou itens.
+6. Ignore completamente:
+   - Cabeçalhos
+   - Rodapés
+   - Numeração de página
+   - Logo, CNPJ, telefone
+   - Totais gerais ("TOTAL", "SOMA", "PEDIDO")
+7. Se o PDF contiver variações do mesmo produto (ex: 6mm, 9mm, 15mm), gerar itens separados.
+8. Se alguma página não tiver itens, ignore.
+9. Retorne **apenas JSON puro**, sem comentários, sem explicações.
+
+Se nenhum produto for encontrado, retorne: []
+
             }
           ]
         }
