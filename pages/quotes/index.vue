@@ -1,38 +1,65 @@
 <template>
-  <MainLayout>
+  <DashboardLayout>
     <div class="p-8">
       <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold text-slate-800">📄 Orçamentos</h1>
-        <NuxtLink to="/quotes/new" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium shadow-sm">
+        <NuxtLink to="/quotes/new" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium shadow-sm hover:bg-blue-700 transition">
           + Novo Orçamento
         </NuxtLink>
       </div>
 
       <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-        <table class="w-full text-sm">
-          <thead class="bg-slate-50 border-b border-slate-100">
+        <table class="w-full text-sm text-left">
+          <thead class="bg-slate-50 border-b border-slate-200 text-slate-500">
             <tr>
-              <th class="px-6 py-4 text-left">ID</th>
-              <th class="px-6 py-4 text-left">Cliente</th>
-              <th class="px-6 py-4 text-left">Data</th>
-              <th class="px-6 py-4 text-left">Status</th>
-              <th class="px-6 py-4 text-right">Valor Total</th>
+              <th class="px-6 py-4 font-medium">ID</th>
+              <th class="px-6 py-4 font-medium">Cliente</th>
+              <th class="px-6 py-4 font-medium">Data</th>
+              <th class="px-6 py-4 font-medium">Status</th>
+              <th class="px-6 py-4 font-medium text-right">Valor Total</th>
+              <th class="px-6 py-4 text-center">Ações</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td colspan="5" class="px-6 py-8 text-center text-slate-400">Nenhum orçamento encontrado.</td>
+          <tbody class="divide-y divide-slate-100">
+            <tr v-for="quote in quotes" :key="quote.id" class="hover:bg-slate-50 transition">
+              <td class="px-6 py-4 font-bold text-slate-700">#{{ quote.id }}</td>
+              <td class="px-6 py-4">{{ quote.cliente_nome }}</td>
+              <td class="px-6 py-4 text-slate-500">
+                {{ new Date(quote.quote_date).toLocaleDateString() }}
+              </td>
+              <td class="px-6 py-4">
+                <span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-bold uppercase">
+                  {{ quote.status }}
+                </span>
+              </td>
+              <td class="px-6 py-4 text-right font-bold text-emerald-600">
+                R$ {{ Number(quote.total_amount).toFixed(2) }}
+              </td>
+              <td class="px-6 py-4 text-center">
+                <button class="text-blue-600 hover:underline text-xs">Ver PDF</button>
+              </td>
+            </tr>
+            <tr v-if="!quotes || quotes.length === 0">
+              <td colspan="6" class="px-6 py-12 text-center text-slate-400">
+                <p class="text-lg">Nenhum orçamento encontrado.</p>
+                <p class="text-sm">Clique em "Novo Orçamento" para começar.</p>
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
-  </MainLayout>
+  </DashboardLayout>
 </template>
 
 <script setup>
-import MainLayout from '~/layouts/DashboardLayout.vue';
-useHead({ title: 'Orçamentos - NetMark ERP' });
-// Aqui você buscará a lista de orçamentos no futuro
-// const { data: quotes } = await useFetch('/api/quotes'); 
+import DashboardLayout from '~/layouts/DashboardLayout.vue';
+
+// Busca os dados da API
+const { data: quotes, refresh } = await useFetch('/api/quotes');
+
+// Atualiza a lista sempre que entrar na página
+onMounted(() => {
+  refresh();
+});
 </script>
