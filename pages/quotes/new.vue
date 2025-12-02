@@ -1,5 +1,5 @@
 <template>
-  <MainLayout>
+  <DashboardLayout>
     <div class="p-8">
       <h1 class="text-3xl font-bold mb-6 text-slate-800">Novo Orçamento</h1>
 
@@ -16,7 +16,12 @@
 
             <div>
               <label class="block text-sm font-medium mb-1">Condição de Pagamento</label>
-              <input v-model="quote.paymentTerms" class="w-full border p-2 rounded-lg" required placeholder="Ex: 3x Sem Juros / À Vista" />
+              <input 
+                v-model="quote.paymentTerms" 
+                class="w-full border p-2 rounded-lg" 
+                required 
+                placeholder="Ex: 3x Sem Juros / À Vista"
+              />
             </div>
           </div>
         </div>
@@ -24,7 +29,7 @@
         <div class="bg-white p-6 rounded-xl shadow-lg border border-slate-200">
           <h2 class="text-xl font-semibold mb-4 flex justify-between items-center">
             Itens do Orçamento
-            <button type="button" @click="addItem" class="text-sm bg-blue-500 text-white px-3 py-1 rounded">
+            <button type="button" @click="addItem" class="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
               + Adicionar Item
             </button>
           </h2>
@@ -41,9 +46,10 @@
             </thead>
             <tbody>
               <tr v-for="(item, index) in quote.items" :key="index">
+                
                 <td class="p-2">
-                  <input v-model="item.materialName" class="w-full border rounded p-1.5" placeholder="Nome do Material (Ex: Chapa MDF)" />
-                  </td>
+                  <input v-model="item.materialName" class="w-full border rounded p-1.5" placeholder="Nome do Material" />
+                </td>
                 
                 <td class="p-2">
                   <input v-model.number="item.quantity" @input="calculateTotal" type="number" step="0.01" class="w-full border rounded p-1.5 text-right" required />
@@ -76,13 +82,12 @@
         </button>
       </form>
     </div>
-  </MainLayout>
+  </DashboardLayout>
 </template>
 
 <script setup>
-import MainLayout from '~/layouts/DashboardLayout.vue';
+import DashboardLayout from '~/layouts/DashboardLayout.vue';
 import CustomerSelect from '~/components/CustomerSelect.vue';
-// Nota: O componente CustomerSelect precisa ser criado e buscar a lista de clientes.
 
 const router = useRouter();
 
@@ -101,7 +106,7 @@ const totalGeral = computed(() => {
 });
 
 function calculateTotal() {
-  // O computed acima lida com o cálculo
+  // A reatividade lida com o cálculo do Total Geral (computed)
 }
 
 function addItem() {
@@ -131,7 +136,6 @@ async function submitQuote() {
         paymentTerms: quote.paymentTerms,
         items: quote.items.map(item => ({
           ...item,
-          // Garante que o materialId é um placeholder, pois não implementamos a busca real do catálogo.
           materialId: item.materialId || 1, 
           unitPrice: parseFloat(item.unitPrice),
           totalPrice: item.quantity * item.unitPrice

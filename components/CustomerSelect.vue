@@ -13,8 +13,14 @@
 </template>
 
 <script setup>
-// Busca todos os clientes para a lista suspensa
-const { data: customers } = await useFetch('/api/customers');
+// Nota: O endpoint correto é /api/clientes (que criamos para a listagem)
+const { data: customers } = await useFetch('/api/clientes'); 
+
+// Extração da lista de dentro do fetch (garantindo que seja um array)
+const customerList = computed(() => {
+  return customers.value || [];
+});
+
 defineProps(['modelValue']);
 defineEmits(['update:modelValue']);
 </script>
