@@ -1,72 +1,57 @@
-import { readMultipartFormData } from 'h3';
-import OpenAI from 'openai';
+import formidable from "formidable";
+import fs from "fs";
+import pdf from "pdf-parse";
 
 export default defineEventHandler(async (event) => {
   try {
-    const form = await readMultipartFormData(event);
-    const file = form?.find((f) => f.name === 'file');
+    // Ativa leitura de FormData (upload)
+    const form = formidable({ multiples: false });
+    const [fields, files] = await form.parse(event.node.req);
 
-    if (!file) {
-      return { sucesso: false, items: [], error: 'Nenhum arquivo recebido' };
+    if (!files.file) {
+      return { sucesso: false, mensagem: "Nenhum arquivo enviado." };
     }
 
-    const pdfBase64 = file.data.toString("base64");
+    const filePath = files.file[0].filepath;
+    const fileBuffer = fs.readFileSync(filePath);
 
-    const client = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
+    // LÊ O PDF COMPLETO PARA TEXTO
+    const data = await pdf(fileBuffer);
 
-    const prompt = `
-Extraia deste orçamento os produtos e preços.
+    const texto = data.text;
 
-Retorne APENAS JSON no formato:
-[
-  { "name": "", "cost": 0, "markup": 40, "price": 0 }
-]
+    // EXTRAI ITENS COM PADRÕES: nome + preço (R$ XX,XX)
+    const regex = /(.*?)(R\$ ?\d{1,3}(?:\.\d{3})*,\d{2})/g;
 
-Regras:
-- name = nome da peça
-- cost = preço encontrado no PDF
-- markup = 40
-- price = cost * 1.4
-- Ignore itens sem preço.
-`;
+    const items = [];
+    let match;
 
-    const response = await client.chat.completions.create({
-      model: "gpt-4o-mini-vision",
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "input_file",
-              file_url: `data:application/pdf;base64,${pdfBase64}`,
-            },
-            { type: "text", text: prompt },
-          ],
-        },
-      ],
-      max_tokens: 3000,
-    });
+    while ((match = regex.exec(texto)) !== null) {
+      const nome = match[1].trim();
+      const precoStr = match[2].replace("R$", "").replace(/\./g, "").replace(",", ".").trim();
+      const preco = parseFloat(precoStr);
 
-    let items = [];
-    try {
-      items = JSON.parse(response.choices[0].message.content || "[]");
-    } catch (err) {
-      console.error("Falha ao converter JSON", err);
+      if (!isNaN(preco)) {
+        items.push({
+          name: nome,
+          cost: preco,
+          markup: 100,
+          price: preco * 2,
+        });
+      }
     }
 
     return {
       sucesso: true,
-      paginas: 1, // não precisamos contar páginas
+      paginas: data.numpages,
       items,
     };
-  } catch (error) {
-    console.error("Erro ao processar PDF", error);
+  } catch (e) {
+    console.error("ERRO AO PROCESSAR PDF:", e);
     return {
       sucesso: false,
-      items: [],
-      error: "Falha ao processar PDF",
+      mensagem: "Erro ao processar PDF",
+      erro: e.message,
     };
   }
 });
