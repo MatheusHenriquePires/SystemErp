@@ -1,75 +1,78 @@
 import { readMultipartFormData } from "h3";
 import OpenAI from "openai";
-import pdf2img from "pdf-img-convert";
 
 export default defineEventHandler(async (event) => {
   try {
     const form = await readMultipartFormData(event);
     const file = form?.[0];
 
-    if (!file) return { items: [] };
+    if (!file) {
+      return { items: [] };
+    }
 
-    // Converte PDF para imagens
-    const pages = await pdf2img.convert(file.data);
+    const base64 = file.data.toString("base64");
 
     const client = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY
     });
 
-    let allItems = [];
+    // 🔥 ENVIA O PDF COMPLETO DIRETO PARA O GPT-4O VISION
+    const completion = await client.chat.completions.create({
+      model: "gpt-4o-mini-vision",
+      temperature: 0,
+      max_tokens: 8000,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "input_image",
+              image_url: `data:application/pdf;base64,${base64}`
+            },
+            {
+              type: "text",
+              text: `
+Você é um extrator profissional de orçamentos de fornecedores.
 
-    for (const page of pages) {
-      const base64 = Buffer.from(page).toString("base64");
+Leia TODAS as páginas do PDF enviado acima e extraia os produtos com os seguintes dados:
 
-      const completion = await client.chat.completions.create({
-        model: "gpt-4o-mini-vision",
-        temperature: 0,
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "input_image",
-                image_url: `data:image/png;base64,${base64}`,
-              },
-              {
-                type: "text",
-                text: `
-Leia a imagem como se fosse uma página de orçamento.
-Extraia nome do item + preço.  
-Retorne somente JSON no formato:
+{
+  "name": "Nome do item",
+  "cost": 0,
+  "markup": 40,
+  "price": 0
+}
 
-[
-  {
-    "name": "Nome do produto",
-    "cost": 0,
-    "markup": 40,
-    "price": 0
-  }
-]
-
-Se não existir nenhum item na página, retorne [].
+Regras obrigatórias:
+- Ignore datas, logos, cabeçalhos, notas, números de pedido.
+- Extraia apenas itens com nome + preço.
+- Normalize o nome (sem abreviações estranhas).
+- Converta R$ 92,00 → 92.00
+- markup FIXO = 40
+- price = cost * 1.4
+- Retorne SOMENTE JSON puro, sem texto fora do JSON.
+- Se não achar nenhum item, retorne [].
 `
-              }
-            ]
-          }
-        ]
-      });
+            }
+          ]
+        }
+      ]
+    });
 
-      let parsed = [];
-      try {
-        parsed = JSON.parse(completion.choices[0].message?.content || "[]");
-      } catch (e) {
-        parsed = [];
-      }
+    let items = [];
+    let content = completion.choices[0].message?.content || "[]";
 
-      allItems.push(...parsed);
+    try {
+      items = JSON.parse(content);
+    } catch (e) {
+      console.error("Falha ao converter JSON", content);
+      items = [];
     }
 
-    return { items: allItems };
+    return { items };
 
   } catch (e) {
-    console.error(e);
+    console.error("ERRO:", e);
     return { items: [] };
   }
 });
