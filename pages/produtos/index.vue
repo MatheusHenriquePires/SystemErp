@@ -24,37 +24,42 @@
                 <th class="px-6 py-3"></th>
               </tr>
             </thead>
-            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              <tr v-if="loading">
-                <td colspan="5" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">Carregando catálogo...</td>
-              </tr>
-              <tr v-else v-for="produto in produtos" :key="produto.id" class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-200">
-                  {{ produto.nome }} <span class="text-xs text-gray-400 dark:text-gray-500 ml-1">({{ produto.medida }})</span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                  {{ produto.categoria }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-right text-emerald-600">
-                  {{ formatarMoeda(produto.preco) }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
-                  <span :class="{'text-red-500': produto.estoque_atual < 10}">
+           <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+    
+    <tr v-if="loading">
+        <td colspan="5" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">Carregando catálogo...</td>
+    </tr>
+    
+    <tr v-else-if="produtos.length === 0">
+        <td colspan="5" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+            Nenhum produto encontrado. Importe uma tabela ou cadastre um novo.
+        </td>
+    </tr>
+    
+    <template v-else>
+        <tr v-for="produto in produtos" :key="produto.id" class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-200">
+                {{ produto.nome }} <span class="text-xs text-gray-400 dark:text-gray-500 ml-1">({{ produto.medida }})</span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                {{ produto.categoria }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-right text-emerald-600">
+                {{ formatarMoeda(produto.preco) }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                <span :class="{'text-red-500': produto.estoque_atual < 10}">
                     {{ produto.estoque_atual }}
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <NuxtLink :to="`/produtos/${produto.id}/editar`" class="text-blue-600 dark:text-blue-400 hover:text-blue-800">
+                </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <NuxtLink :to="`/produtos/${produto.id}/editar`" class="text-blue-600 dark:text-blue-400 hover:text-blue-800">
                     Editar
-                  </NuxtLink>
-                </td>
-              </tr>
-              <tr v-else-if="produtos.length === 0">
-                 <td colspan="5" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                    Nenhum produto encontrado. Importe uma tabela ou cadastre um novo.
-                 </td>
-              </tr>
-            </tbody>
+                </NuxtLink>
+            </td>
+        </tr>
+    </template>
+</tbody>
           </table>
         </div>
       </div>
