@@ -14,7 +14,7 @@ async function handleLogin() {
 
     try {
         // 1. Chama o backend
-        const { data, error } = await useFetch('/api/auth/login', {
+        const { data, error } = await useFetch('/api/login', {
             method: 'POST',
             body: { 
                 email: email.value, 
@@ -22,9 +22,11 @@ async function handleLogin() {
             }
         })
 
+
         // 2. Trata erro do backend
         if (error.value) {
             erro.value = error.value.data?.message || 'Erro ao entrar.'
+            
             return
         }
 
