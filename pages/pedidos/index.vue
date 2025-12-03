@@ -66,13 +66,13 @@
 
                 <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2">
                   
-                  <button v-if="pedido.status === 'ORCAMENTO'" 
-                    @click="atualizarStatus(pedido.id, 'VENDA')"
-                    class="text-white bg-green-500 hover:bg-green-600 px-3 py-1 rounded shadow-sm transition"
-                    title="Aprovar e Virar Venda"
-                  >
-                    ✅ Aprovar
-                  </button>
+                <button v-if="pedido.status === 'ORCAMENTO' || pedido.status === 'PENDENTE'" 
+  @click="atualizarStatus(pedido.id, 'VENDA')"
+  class="text-white bg-green-500 hover:bg-green-600 px-3 py-1 rounded shadow-sm transition"
+  title="Aprovar e Virar Venda"
+>
+  ✅ Aprovar
+</button>
 
                   <button v-if="pedido.status === 'VENDA'" 
                     @click="atualizarStatus(pedido.id, 'PAGO')"
