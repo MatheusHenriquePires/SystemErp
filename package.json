@@ -10,6 +10,7 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@nuxtjs/color-mode": "^4.0.0",
     "apexcharts": "^5.3.6",
     "formidable": "^3.5.4",
     "jsonwebtoken": "^9.0.2",

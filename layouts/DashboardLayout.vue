@@ -75,5 +75,6 @@ const cookie = useCookie('usuario_sessao');
 function logout() {
     cookie.value = null; // Apaga o cookie
     window.location.href = '/login'; // Redireciona
+    
 }
 </script>
