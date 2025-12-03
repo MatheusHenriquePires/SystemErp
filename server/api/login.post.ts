@@ -1,17 +1,16 @@
-import jwt from 'jsonwebtoken' // <--- Importante
+import jwt from 'jsonwebtoken'
 import postgres from 'postgres'
 import { defineEventHandler, readBody, setCookie, createError } from 'h3'
 
 const sql = postgres(process.env.DATABASE_URL as string)
 
-// ESTA É A CHAVE MESTRA. 
-
+// Chave secreta para assinar o token
 const EXPLICIT_SECRET = 'minha_chave_secreta_para_teste_2025_42'; 
 
 export default defineEventHandler(async (event) => {
     const body = await readBody(event)
 
-    // 1. Verifica usuário no banco (Exemplo simplificado)
+    // 1. Verifica usuário no banco
     const usuarios = await sql`
         SELECT * FROM usuarios WHERE email = ${body.email} AND senha = ${body.senha}
     `
@@ -21,15 +20,15 @@ export default defineEventHandler(async (event) => {
         throw createError({ statusCode: 401, message: 'Email ou senha incorretos' })
     }
 
-   
+    // 2. Cria o Token
     const token = jwt.sign(
         { 
             id: usuario.id, 
             email: usuario.email, 
-            empresa_id: usuario.empresa_id /
+            empresa_id: usuario.empresa_id 
         }, 
         EXPLICIT_SECRET, 
-        { expiresIn: '7d' } 
+        { expiresIn: '7d' }
     );
 
     // 3. Salva no Cookie
