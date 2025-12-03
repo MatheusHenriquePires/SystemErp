@@ -30,32 +30,60 @@
 </template>
 
 <script setup>
-definePageMeta({ layout: false })
+import { ref } from 'vue'
+import { useRouter } from 'vue-router' // Importante para redirecionar
 
-const form = ref({ email: '', senha: '' })
-const loading = ref(false)
-const erro = ref('')
 const router = useRouter()
+const email = ref('')
+const senha = ref('')
+const erro = ref('')
+const carregando = ref(false)
 
-async function fazerLogin() {
-  loading.value = true
-  erro.value = ''
-  
-  try {
-    const resposta = await $fetch('/api/login', {
-      method: 'POST',
-      body: form.value
-    })
-    
-    if (resposta.sucesso) {
-      // Força o redirecionamento
-      window.location.href = '/'
+async function handleLogin() {
+    carregando.value = true
+    erro.value = ''
+
+    try {
+        // 1. Chama o seu backend (que agora está funcionando)
+        const { data, error } = await useFetch('/api/login', {
+            method: 'POST',
+            body: { 
+                email: email.value, 
+                senha: senha.value 
+            }
+        })
+
+        // 2. Se o backend retornou erro (ex: senha errada)
+        if (error.value) {
+            erro.value = error.value.data?.message || 'Erro ao entrar.'
+            return
+        }
+
+        // 3. A PARTE QUE FALTA: Redirecionar se deu certo
+        if (data.value && data.value.success) {
+            // Força a atualização do estado de autenticação (opcional, mas bom)
+            // e manda para a página de pedidos
+            await navigateTo('/pedidos') 
+        }
+
+    } catch (e) {
+        erro.value = "Erro de conexão."
+        console.error(e)
+    } finally {
+        carregando.value = false
     }
-  } catch (e) {
-    console.error(e)
-    erro.value = 'Email ou senha incorretos (ou erro no servidor).'
-  } finally {
-    loading.value = false
-  }
 }
 </script>
+
+<template>
+  <form @submit.prevent="handleLogin">
+    <input v-model="email" type="email" placeholder="Email" required />
+    <input v-model="senha" type="password" placeholder="Senha" required />
+    
+    <p v-if="erro" style="color: red">{{ erro }}</p>
+    
+    <button type="submit" :disabled="carregando">
+        {{ carregando ? 'Entrando...' : 'Entrar' }}
+    </button>
+  </form>
+</template>
