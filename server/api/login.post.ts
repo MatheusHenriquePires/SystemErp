@@ -33,13 +33,13 @@ export default defineEventHandler(async (event) => {
         })
 
         // 3. Define o cookie de sessão com o TOKEN JWT
-        setCookie(event, 'usuario_sessao', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            path: '/',
-            maxAge: 60 * 60 * 2
-        })
+       setCookie(event, 'usuario_sessao', token, {
+    httpOnly: false, // <<--- CORREÇÃO TEMPORÁRIA: Permite que o JS do cliente leia o cookie
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 60 * 2 // 2 horas (em segundos)
+});
 
         return { sucesso: true, usuario }
 
