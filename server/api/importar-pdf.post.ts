@@ -76,6 +76,7 @@ Regras:
       sucesso: false,
       erro: "Erro ao processar arquivo",
       detalhe: err.message
+      
     };
   }
 });
