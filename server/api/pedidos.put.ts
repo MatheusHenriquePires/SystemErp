@@ -6,7 +6,7 @@ const sql = postgres(process.env.DATABASE_URL as string)
 const EXPLICIT_SECRET = 'minha_chave_secreta_para_teste_2025_42';
 
 export default defineEventHandler(async (event) => {
-    // 1. Autenticação
+    // 1. Segurança
     const cookie = getCookie(event, 'usuario_sessao')
     if (!cookie) throw createError({ statusCode: 401, message: 'Login necessário' })
 
@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
         throw createError({ statusCode: 403, message: 'Sessão inválida' })
     }
 
-    // 2. Recebe o ID e o Novo Status
+    // 2. Recebe o ID e o novo Status
     const body = await readBody(event)
     
     if (!body.id || !body.status) {

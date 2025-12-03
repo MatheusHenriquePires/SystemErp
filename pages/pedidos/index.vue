@@ -50,6 +50,7 @@
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {{ new Date(pedido.data_criacao).toLocaleDateString('pt-BR') }}
                 </td>
+                
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right">
                   {{ formatarMoeda(pedido.total) }}
                 </td>
@@ -68,7 +69,7 @@
                   <button v-if="pedido.status === 'ORCAMENTO'" 
                     @click="atualizarStatus(pedido.id, 'VENDA')"
                     class="text-white bg-green-500 hover:bg-green-600 px-3 py-1 rounded shadow-sm transition"
-                    title="Baixar Estoque e Virar Venda"
+                    title="Aprovar e Virar Venda"
                   >
                     ✅ Aprovar
                   </button>
@@ -80,14 +81,12 @@
                   >
                     💰 Receber
                   </button>
-
-                  </td>
+                </td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
-
     </div>
   </DashboardLayout>
 </template>
@@ -100,7 +99,7 @@ const pedidos = ref([]);
 const loading = ref(true);
 const filtroAtual = ref('TODOS');
 
-// Configuração das Abas
+// Abas de Navegação
 const abas = [
   { key: 'TODOS', label: 'Todos' },
   { key: 'ORCAMENTO', label: '📝 Orçamentos' },
@@ -108,19 +107,18 @@ const abas = [
   { key: 'PAGO', label: '✅ Finalizados' }
 ];
 
-// Estilização das Badges de Status
+// Cores das Badges
 const classesStatus: Record<string, string> = {
   'ORCAMENTO': 'bg-yellow-100 text-yellow-800',
   'VENDA': 'bg-blue-100 text-blue-800',
   'PAGO': 'bg-green-100 text-green-800',
-  'CANCELADO': 'bg-red-100 text-red-800'
+  'PENDENTE': 'bg-gray-100 text-gray-800' // Caso algum antigo tenha ficado como pendente
 };
 
-// Carregar Dados
+// Buscar Pedidos
 const carregarPedidos = async () => {
   loading.value = true;
   try {
-    // Chama a API passando o status selecionado
     const data = await $fetch(`/api/pedidos?status=${filtroAtual.value}`);
     pedidos.value = data || [];
   } catch (e) {
@@ -131,29 +129,29 @@ const carregarPedidos = async () => {
   }
 };
 
-// Mudar Aba
+// Trocar de Aba
 const mudarAba = (novoStatus: string) => {
   filtroAtual.value = novoStatus;
-  carregarPedidos(); // Recarrega a lista
+  carregarPedidos();
 };
 
-// Ação de Atualizar Status (Conectado com pedidos.put.ts)
+// Atualizar Status (PUT)
 const atualizarStatus = async (id: number, novoStatus: string) => {
   const acao = novoStatus === 'VENDA' ? 'Aprovar Orçamento' : 'Confirmar Recebimento';
   
   if (!confirm(`Tem certeza que deseja ${acao}?`)) return;
 
   try {
-    // CORREÇÃO 2 e 3: Método PUT e nome do campo 'status'
+    // CORREÇÃO 2: Chamada PUT correta para o novo arquivo que criamos
     await $fetch('/api/pedidos', {
       method: 'PUT',
       body: { 
         id: id, 
-        status: novoStatus // O backend espera 'status', não 'novo_status'
+        status: novoStatus 
       }
     });
     
-    // Atualiza a lista para refletir a mudança
+    // Atualiza a lista na hora
     await carregarPedidos();
     alert('Status atualizado com sucesso!');
     
@@ -166,10 +164,9 @@ const atualizarStatus = async (id: number, novoStatus: string) => {
 const formatarMoeda = (val: number) => 
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(val));
 
-// Inicialização
 onMounted(() => {
   carregarPedidos();
 });
 
-useHead({ title: 'Gestão de Pedidos - ERP' });
+useHead({ title: 'Gestão de Pedidos' });
 </script>
