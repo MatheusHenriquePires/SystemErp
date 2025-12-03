@@ -1,29 +1,26 @@
 <template>
   <div class="flex min-h-screen bg-slate-50 font-sans text-slate-900">
     
-     <aside class="w-64 bg-white border-r border-slate-200 hidden md:flex flex-col">
-     <div class="p-6 flex items-center gap-3 border-b border-slate-100">
-  <img src="/logo.png" alt="Logo NetMark" class="h-10 w-auto object-contain" />
-  <span class="font-bold text-xl tracking-tight text-blue-900">System ERP</span>
-     </div>
+    <aside class="w-64 bg-white border-r border-slate-200 hidden md:flex flex-col">
+      <div class="p-6 flex items-center gap-3 border-b border-slate-100">
+        <img src="/logo.png" alt="Logo NetMark" class="h-10 w-auto object-contain" />
+        <span class="font-bold text-xl tracking-tight text-blue-900">System ERP</span>
+      </div>
 
-<nav class="flex-1 p-4 space-y-1">
-  <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 mt-2">Gestão</p>
-  
-  <NuxtLink to="/" class="px-3 py-2 text-blue-600 bg-blue-50 rounded-md font-medium cursor-pointer flex items-center gap-3 transition">
-    <span class="text-lg">📊</span> Dashboard
-  </NuxtLink>
+      <nav class="flex-1 p-4 space-y-1">
+        <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 mt-2">Gestão</p>
+        
+        <NuxtLink to="/" class="px-3 py-2 text-blue-600 bg-blue-50 rounded-md font-medium cursor-pointer flex items-center gap-3 transition">
+          <span class="text-lg">📊</span> Dashboard
+        </NuxtLink>
 
-  <NuxtLink to="/quotes" class="px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-md font-medium cursor-pointer flex items-center gap-3 transition">
-    <span class="text-lg">📄</span> Orçamentos
-  </NuxtLink>
+        <NuxtLink to="/pedidos" class="px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-md font-medium cursor-pointer flex items-center gap-3 transition">
+          <span class="text-lg">🧾</span> Pedidos (Orçamentos/Vendas)
+        </NuxtLink>
 
-  <NuxtLink to="/vendas" class="px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-md font-medium cursor-pointer flex items-center gap-3 transition">
-    <span class="text-lg">🛒</span> Vendas
-  </NuxtLink>
-  <NuxtLink to="/produtos/importar" class="px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-md font-medium cursor-pointer flex items-center gap-3 transition">
-    <span class="text-lg">📥</span> Importar Tabela
-  </NuxtLink>
+        <NuxtLink to="/produtos/importar" class="px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-md font-medium cursor-pointer flex items-center gap-3 transition">
+          <span class="text-lg">📥</span> Importar Tabela
+        </NuxtLink>
 
         <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 mt-6">Cadastros</p>
 
@@ -45,7 +42,15 @@
     </aside>
 
     <main class="flex-1 overflow-y-auto">
-        <slot /> 
+        <header class="sticky top-0 z-10 bg-white border-b border-slate-200 p-4 shadow-sm flex items-center justify-end">
+            <div class="flex items-center gap-3">
+                <slot name="header-actions" />
+            </div>
+        </header>
+
+        <div class="p-8">
+            <slot /> 
+        </div>
     </main>
   </div>
 </template>
@@ -54,7 +59,7 @@
 // Lógica de Logout (Auto-importado pelo Nuxt)
 const cookie = useCookie('usuario_sessao'); 
 function logout() {
-  cookie.value = null; // Apaga o cookie
-  window.location.href = '/login'; // Redireciona
+    cookie.value = null; // Apaga o cookie
+    window.location.href = '/login'; // Redireciona
 }
 </script>
