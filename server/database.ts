@@ -9,6 +9,7 @@ if (!connectionString) {
 const sql = (globalThis as any).db || postgres(connectionString)
 if (process.env.NODE_ENV !== 'production') {
   (globalThis as any).db = sql
+  
 }
 
 export default sql // <--- Essa é a conexão que suas APIs devem importar
