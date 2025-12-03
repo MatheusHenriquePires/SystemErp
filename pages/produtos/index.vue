@@ -9,11 +9,11 @@
         </h1>
 
         <div class="flex gap-2">
-            <input type="file" ref="fileInput" class="hidden" accept=".pdf" @change="processarArquivo" />
+            <input type="file" ref="fileInput" class="hidden" accept="image/*" @change="processarArquivo" />
 
             <button @click="triggerFileInput" :disabled="importando" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-2 disabled:opacity-50">
               <span v-if="importando">⏳ Processando...</span>
-              <span v-else>📄 Importar PDF (IA)</span>
+              <span v-else>📸 Importar Foto/Print</span>
             </button>
 
             <NuxtLink to="/produtos/novo" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold shadow-sm transition flex items-center">
@@ -35,7 +35,7 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nome</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Preço</th>
                 <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estoque</th>
-                <th class="px-6 py-3"></th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
               </tr>
             </thead>
             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -63,9 +63,15 @@
                           </span>
                       </td>
                       <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <NuxtLink :to="`/produtos/${produto.id}/editar`" class="text-blue-600 dark:text-blue-400 hover:text-blue-800">
-                              Editar
-                          </NuxtLink>
+                          <div class="flex justify-end gap-3">
+                              <NuxtLink :to="`/produtos/${produto.id}/editar`" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 font-bold">
+                                  Editar
+                              </NuxtLink>
+                              
+                              <button @click="excluirProduto(produto.id, produto.nome)" class="text-red-600 hover:text-red-800 font-bold">
+                                  Excluir
+                              </button>
+                          </div>
                       </td>
                   </tr>
               </template>
@@ -101,6 +107,19 @@ const carregarProdutos = async () => {
   }
 };
 
+// NOVA FUNÇÃO: Excluir Produto
+const excluirProduto = async (id: number, nome: string) => {
+    if (!confirm(`Tem certeza que deseja excluir "${nome}"?`)) return;
+
+    try {
+        await $fetch(`/api/produtos/${id}`, { method: 'DELETE' });
+        // Remove da lista visualmente sem precisar recarregar tudo do servidor
+        produtos.value = produtos.value.filter(p => p.id !== id);
+    } catch (e: any) {
+        alert(e.statusMessage || "Erro ao excluir produto (talvez ele esteja em uso).");
+    }
+};
+
 const triggerFileInput = () => fileInput.value?.click();
 
 const processarArquivo = async (event: Event) => {
@@ -129,17 +148,17 @@ const processarArquivo = async (event: Event) => {
             body: {
               nome: item.nome,
               preco: precoLimpo,
-              estoque: 10, // Vai ser salvo em estoque_atual agora
+              estoque: 10,
               tipo: 'produto'
             }
           });
           salvos++;
         } catch (err) { console.error(err); }
       }
-      alert(`Sucesso! ${salvos} produtos importados.`);
+      alert(`Sucesso! ${salvos} produtos importados/atualizados.`);
       await carregarProdutos();
     } else {
-      alert('A IA não conseguiu ler produtos neste PDF.');
+      alert('A IA não conseguiu ler produtos nesta imagem.');
     }
   } catch (e) {
     alert('Erro ao processar importação.');
