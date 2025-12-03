@@ -60,15 +60,15 @@
 </template>
 
 <script setup>
-import { useColorMode } from '@nuxtjs/color-mode';
-import { useCookie } from '#app';
-import ClientOnly from 'vue-client-only';
-
-// Lógica do tema e logout permanece a mesma
+// Lógica do Nuxt para Modo de Cor
+// O Nuxt DEVE auto-importar useColorMode(). Remova qualquer linha de importação explícita.
 const colorMode = useColorMode(); 
+
 function toggleTheme() {
     colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark';
 }
+
+// Lógica de Logout
 const cookie = useCookie('usuario_sessao'); 
 function logout() {
     cookie.value = null;
