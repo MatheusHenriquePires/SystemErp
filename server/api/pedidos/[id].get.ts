@@ -6,7 +6,6 @@ const sql = postgres(process.env.DATABASE_URL as string)
 const EXPLICIT_SECRET = 'minha_chave_secreta_para_teste_2025_42';
 
 export default defineEventHandler(async (event) => {
-    // 1. Validação de Segurança
     const cookie = getCookie(event, 'usuario_sessao')
     if (!cookie) throw createError({ statusCode: 401, message: 'Login necessário' })
     
@@ -16,12 +15,11 @@ export default defineEventHandler(async (event) => {
         throw createError({ statusCode: 403, message: 'Sessão inválida' })
     }
 
-    // 2. Pega o ID da URL
     const id = event.context.params?.id
     if (!id) throw createError({ statusCode: 400, message: 'ID obrigatório' })
 
     try {
-        // 3. Busca o Pedido + Dados do Cliente
+        // 1. Busca dados do Pedido e Cliente
         const pedido = await sql`
             SELECT 
                 p.*,
@@ -36,11 +34,14 @@ export default defineEventHandler(async (event) => {
 
         if (pedido.length === 0) throw createError({ statusCode: 404, message: 'Pedido não encontrado' })
 
-        // 4. (Opcional) Busca os Itens do Pedido
-        // Se você ainda não criou a tabela 'pedidos_itens', isso retornará vazio por enquanto.
-        // const itens = await sql`SELECT * FROM pedidos_itens WHERE pedido_id = ${id}`
-        const itens: any[] = [] // Deixe vazio por enquanto se não tiver a tabela
+        // 2. Busca os Itens do Pedido (NOVO)
+        const itens = await sql`
+            SELECT descricao, quantidade, preco_unitario 
+            FROM pedidos_itens 
+            WHERE pedido_id = ${id}
+        `
 
+        // Retorna tudo junto
         return { ...pedido[0], itens }
 
     } catch (error) {

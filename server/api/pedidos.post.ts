@@ -8,7 +8,7 @@ const EXPLICIT_SECRET = 'minha_chave_secreta_para_teste_2025_42';
 export default defineEventHandler(async (event) => {
     const body = await readBody(event)
     const cookie = getCookie(event, 'usuario_sessao')
-    if (!cookie) throw createError({ statusCode: 401, message: 'Faça login' })
+    if (!cookie) throw createError({ statusCode: 401, message: 'Login necessário' })
 
     let usuario;
     try {
@@ -20,6 +20,7 @@ export default defineEventHandler(async (event) => {
     if (!body.cliente_id) throw createError({ statusCode: 400, message: 'Cliente obrigatório' })
 
     try {
+        // 1. Inserir o Pedido (Cabeçalho)
         const resultado = await sql`
             INSERT INTO pedidos (
                 empresa_id, 
@@ -36,7 +37,28 @@ export default defineEventHandler(async (event) => {
             )
             RETURNING id
         `
-        return { success: true, id: resultado[0].id }
+        const pedidoId = resultado[0].id
+
+        // 2. Inserir os Itens (Loop)
+        if (body.items && body.items.length > 0) {
+            for (const item of body.items) {
+                await sql`
+                    INSERT INTO pedidos_itens (
+                        pedido_id,
+                        descricao,
+                        quantidade,
+                        preco_unitario
+                    ) VALUES (
+                        ${pedidoId},
+                        ${item.materialName || 'Item sem nome'},
+                        ${item.quantity || 1},
+                        ${item.unitPrice || 0}
+                    )
+                `
+            }
+        }
+
+        return { success: true, id: pedidoId }
 
     } catch (error: any) {
         console.error("Erro SQL:", error)
