@@ -15,7 +15,7 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         
-        <NuxtLink to="/pedidos" class="card-access bg-white dark:bg-gray-800 hover:shadow-lg transition group cursor-pointer flex flex-col items-center text-center">
+        <NuxtLink to="/pedidos" class="card-access bg-white dark:bg-[#282828] shadow-md dark:shadow-2xl border border-slate-200 dark:border-[#444] hover:border-blue-500 dark:hover:border-blue-400 transition group cursor-pointer">
           <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition">
             <span class="text-2xl">🧾</span>
           </div>
@@ -23,7 +23,7 @@
           <p class="text-xs text-slate-500 dark:text-gray-400 mt-1">Gerenciar propostas e histórico de vendas</p>
         </NuxtLink>
 
-        <NuxtLink to="/produtos/importar" class="card-access bg-white dark:bg-gray-800 hover:shadow-lg transition group cursor-pointer flex flex-col items-center text-center">
+        <NuxtLink to="/produtos/importar" class="card-access bg-white dark:bg-[#282828] shadow-md dark:shadow-2xl border border-slate-200 dark:border-[#444] hover:border-teal-500 transition group cursor-pointer">
           <div class="w-12 h-12 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition">
             <span class="text-2xl">📥</span>
           </div>
@@ -31,7 +31,7 @@
           <p class="text-xs text-slate-500 dark:text-gray-400 mt-1">Atualizar catálogo via PDF/Telegram</p>
         </NuxtLink>
 
-        <NuxtLink to="/clientes" class="card-access bg-white dark:bg-gray-800 hover:shadow-lg transition group cursor-pointer flex flex-col items-center text-center">
+        <NuxtLink to="/clientes" class="card-access bg-white dark:bg-[#282828] shadow-md dark:shadow-2xl border border-slate-200 dark:border-[#444] hover:border-purple-500 transition group cursor-pointer">
           <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition">
             <span class="text-2xl">👥</span>
           </div>
@@ -39,7 +39,7 @@
           <p class="text-xs text-slate-500 dark:text-gray-400 mt-1">Base de contatos e CRM</p>
         </NuxtLink>
 
-        <NuxtLink to="/produtos" class="card-access bg-white dark:bg-gray-800 hover:shadow-lg transition group cursor-pointer flex flex-col items-center text-center">
+        <NuxtLink to="/produtos" class="card-access bg-white dark:bg-[#282828] shadow-md dark:shadow-2xl border border-slate-200 dark:border-[#444] hover:border-orange-500 transition group cursor-pointer">
           <div class="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition">
             <span class="text-2xl">📦</span>
           </div>
@@ -101,7 +101,7 @@
                   </td>
                 </tr>
                 <tr v-if="!dados?.lista?.length">
-                  <td class="p-6 text-center text-slate-400 dark:text-gray-500">Nada registrado ainda.</td>
+                  <td class="p-6 text-center text-slate-400 dark:text-gray-500" colspan="2">Nada registrado ainda.</td>
                 </tr>
               </tbody>
             </table>
@@ -117,24 +117,31 @@
 <script setup>
 import DashboardLayout from '~/layouts/DashboardLayout.vue';
 
-// Busca dados Unificados da API (Vendas + Orçamentos + Despesas)
+const colorMode = useColorMode(); 
+
+// Busca dados Unificados da API
 const { data: dados, refresh } = await useFetch('/api/dashboard')
 
-// Config do Gráfico
+// Config do Gráfico (Computada para reagir à mudança de tema)
 const chartOptions = computed(() => ({
-  chart: { type: 'area', toolbar: { show: false } },
+  chart: { 
+    type: 'area', 
+    toolbar: { show: false },
+    // Fundo do ApexChart se ajustando ao tema
+    background: colorMode.value === 'dark' ? '#1f2937' : '#FFFFFF', 
+  },
   dataLabels: { enabled: false },
   stroke: { curve: 'smooth', width: 2 },
   xaxis: { 
     categories: dados.value?.grafico?.map(item => item.mes) || [],
-    labels: { style: { colors: 'currentColor' } } // Adapta a cor do label
+    labels: { style: { colors: colorMode.value === 'dark' ? '#D1D5DB' : '#4B5563' } } // Cores dos labels do eixo
   },
   yaxis: {
-    labels: { style: { colors: 'currentColor' } } // Adapta a cor do label
+    labels: { style: { colors: colorMode.value === 'dark' ? '#D1D5DB' : '#4B5563' } }
   },
   colors: ['#10b981', '#f43f5e'],
   fill: { opacity: 0.1 },
-  tooltip: { theme: 'dark' } // Garante que o tooltip seja legível no modo escuro
+  tooltip: { theme: colorMode.value } // Tema do tooltip
 }))
 
 const series = computed(() => [
