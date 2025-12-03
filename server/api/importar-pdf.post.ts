@@ -17,9 +17,9 @@ export default defineEventHandler(async (event) => {
     // 🔥 Cliente OpenAI
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    // 🔥 Integração com GPT-4o Mini Vision (barato e preciso)
+    // 🔥 Integração com GPT-4o Mini (Visão já é nativa neste modelo)
     const result = await client.chat.completions.create({
-      model: "gpt-4o-mini-vision",
+      model: "gpt-4o-mini", // <--- CORRIGIDO AQUI (Vision é nativo)
       temperature: 0,
       messages: [
         {
@@ -27,7 +27,9 @@ export default defineEventHandler(async (event) => {
           content: [
             {
               type: "input_image",
-              image_url: `data:application/pdf;base64,${base64}`
+              image_url: {
+                 url: `data:application/pdf;base64,${base64}` // Formato correto para envio de base64
+              }
             },
             {
               type: "text",
@@ -56,7 +58,11 @@ Regra:
     });
 
     // 🔥 Conteúdo retornado pela IA (um JSON como texto)
-    const text = result.choices[0].message?.content || "";
+    let text = result.choices[0].message?.content || "";
+    
+    // Limpeza de segurança (caso a IA retorne ```json ... ```)
+    text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+
     const produtos = JSON.parse(text);
 
     return {
@@ -65,8 +71,8 @@ Regra:
       produtos
     };
 
-  } catch (err) {
-    console.error(err);
+  } catch (err: any) {
+    console.error("Erro OpenAI:", err);
     return {
       sucesso: false,
       erro: "Falha ao processar PDF",
