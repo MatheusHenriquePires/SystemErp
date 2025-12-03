@@ -3,79 +3,78 @@ import OpenAI from "openai";
 
 export default defineEventHandler(async (event) => {
   try {
-    // 🔥 Lê o PDF enviado pelo <input type="file">
+    // 1. Lê o arquivo enviado
     const form = await readMultipartFormData(event);
     const file = form?.[0];
 
     if (!file) {
-      return { sucesso: false, erro: "Nenhum PDF enviado." };
+      return { sucesso: false, erro: "Nenhum arquivo enviado." };
     }
 
-    // Converte PDF em base64 (para enviar como imagem para a API)
+    // 2. Prepara a imagem/PDF em Base64
     const base64 = file.data.toString("base64");
+    // Define o mime type (tenta adivinhar ou usa padrao)
+    const mimeType = file.type || "image/jpeg"; 
 
-    // 🔥 Cliente OpenAI
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    // 🔥 Integração com GPT-4o Mini (Visão já é nativa neste modelo)
+    // 3. Envia para o GPT-4o-mini
     const result = await client.chat.completions.create({
-      model: "gpt-4o-mini", // <--- CORRIGIDO AQUI (Vision é nativo)
-      temperature: 0,
+      model: "gpt-4o-mini",
       messages: [
         {
           role: "user",
           content: [
             {
-              type: "input_image",
+              type: "image_url", // <--- CORRIGIDO: O nome correto é image_url
               image_url: {
-                 url: `data:application/pdf;base64,${base64}` // Formato correto para envio de base64
+                 // Enviamos o base64 montado corretamente
+                 url: `data:${mimeType};base64,${base64}` 
               }
             },
             {
               type: "text",
               text: `
-Extraia do PDF todos os produtos e retorne exatamente no formato JSON abaixo:
+Analise esta imagem/nota fiscal. Extraia todos os produtos e retorne APENAS um JSON puro (sem markdown) neste formato:
 
 [
   {
-    "nome": "",
-    "preco_custo": 0,
+    "nome": "Nome do Produto",
+    "preco_custo": 10.50,
     "margem": 40,
-    "preco_venda": 0
+    "preco_venda": 14.70
   }
 ]
 
-Regra:
-- Nome deve conter: categoria + produto + dimensões.
-- O preço deve ser convertido para número (ex: R$ 92,00 → 92.00)
-- "margem" = 40 sempre.
-- "preco_venda" = preco_custo * 1.4
+Regras:
+- "preco_venda" deve ser numérico (ponto flutuante).
+- Se não achar o preço, coloque 0.
+- Ignore itens que não sejam produtos (ex: frete, impostos).
 `
             }
           ]
         }
-      ]
+      ],
+      max_tokens: 2000,
     });
 
-    // 🔥 Conteúdo retornado pela IA (um JSON como texto)
+    // 4. Limpa e processa a resposta
     let text = result.choices[0].message?.content || "";
-    
-    // Limpeza de segurança (caso a IA retorne ```json ... ```)
+    // Remove blocos de código markdown se a IA colocar
     text = text.replace(/```json/g, '').replace(/```/g, '').trim();
 
     const produtos = JSON.parse(text);
 
     return {
       sucesso: true,
-      total: produtos.length,
       produtos
     };
 
   } catch (err: any) {
-    console.error("Erro OpenAI:", err);
+    console.error("Erro API IA:", err);
     return {
       sucesso: false,
-      erro: "Falha ao processar PDF",
+      erro: "Erro ao processar arquivo",
       detalhe: err.message
     };
   }
