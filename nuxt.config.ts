@@ -1,7 +1,11 @@
 import { defineNuxtConfig } from 'nuxt/config'
 
 export default defineNuxtConfig({
-  modules: ['@nuxtjs/tailwindcss'],
+  modules: [
+    '@nuxtjs/tailwindcss',
+    // NOVO: Módulo para gerenciar o Dark Mode
+    '@nuxtjs/color-mode' 
+  ],
 
   css: ['~/assets/css/main.css'],
 
@@ -10,6 +14,11 @@ export default defineNuxtConfig({
       tailwindcss: {},
       autoprefixer: {},
     },
+  },
+  
+  // Configuração do Módulo de Cores
+  colorMode: {
+    classSuffix: '' // Isso garante que o Nuxt use apenas a classe 'dark'
   },
 
   nitro: {
@@ -21,7 +30,6 @@ export default defineNuxtConfig({
         'pdfjs-dist/build/pdf.js',
         'pdfjs-dist/build/pdf.worker.js',
         'pdfjs-dist/legacy/build/pdf.js'
-        
       ]
     }
   },
