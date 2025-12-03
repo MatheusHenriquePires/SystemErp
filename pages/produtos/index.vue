@@ -77,7 +77,8 @@ const formatarMoeda = (valor: number) => {
 const carregarProdutos = async () => {
   loading.value = true;
   try {
-    const data = await $fetch('/api/produtos');
+    // Note: Esta API depende de um JWT válido para o filtro multi-empresa
+    const data = await $fetch('/api/produtos'); 
     produtos.value = data || [];
   } catch (e) {
     console.error("Erro ao buscar produtos:", e);
@@ -93,8 +94,5 @@ useHead({ title: 'Produtos - NetMark ERP' });
 </script>
 
 <style scoped>
-/* Estilização para o ícone do Dashboard (melhor contraste) */
-.dark .dark\:text-gray-400 {
-    color: #9CA3AF;
-}
+/* Estilo da Tabela - Sem precisar de classes dinâmicas complexas no CSS */
 </style>
