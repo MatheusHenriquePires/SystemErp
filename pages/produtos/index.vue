@@ -4,25 +4,14 @@
     <div class="px-4 py-6 md:px-6 md:py-8 lg:px-8">
       
       <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-        
         <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">
           📦 Catálogo de Produtos
         </h1>
 
         <div class="flex gap-2">
-            <input 
-              type="file" 
-              ref="fileInput" 
-              class="hidden" 
-              accept=".pdf" 
-              @change="processarArquivo"
-            />
+            <input type="file" ref="fileInput" class="hidden" accept=".pdf" @change="processarArquivo" />
 
-            <button 
-              @click="triggerFileInput"
-              :disabled="importando"
-              class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-2 disabled:opacity-50"
-            >
+            <button @click="triggerFileInput" :disabled="importando" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-2 disabled:opacity-50">
               <span v-if="importando">⏳ Processando...</span>
               <span v-else>📄 Importar PDF (IA)</span>
             </button>
@@ -31,7 +20,6 @@
               + Novo Manual
             </NuxtLink>
         </div>
-
       </div>
 
       <div v-if="importando" class="mb-6 bg-blue-50 text-blue-700 p-4 rounded-lg border border-blue-200 animate-pulse">
@@ -55,7 +43,6 @@
               <tr v-if="loading">
                   <td colspan="4" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">Carregando...</td>
               </tr>
-
               <tr v-else-if="produtos.length === 0">
                   <td colspan="4" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
                       Nenhum produto. Use os botões acima para cadastrar.
@@ -71,8 +58,8 @@
                           {{ formatarMoeda(produto.preco) }}
                       </td>
                       <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
-                          <span :class="{'text-red-500 font-bold': produto.estoque < 10, 'text-gray-700 dark:text-gray-300': produto.estoque >= 10}">
-                              {{ produto.estoque || 0 }}
+                          <span :class="{'text-red-500 font-bold': (produto.estoque_atual || 0) < 10}">
+                              {{ produto.estoque_atual ?? produto.estoque ?? 0 }}
                           </span>
                       </td>
                       <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -97,27 +84,23 @@ const importando = ref(false);
 const produtos = ref<any[]>([]);
 const fileInput = ref<HTMLInputElement | null>(null);
 
-// Utilitário de Moeda
 const formatarMoeda = (valor: any) => {
   const numero = Number(valor);
   if (isNaN(numero)) return 'R$ 0,00';
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(numero);
 };
 
-// Carregar Dados
 const carregarProdutos = async () => {
   try {
     const data = await $fetch('/api/produtos'); 
     produtos.value = data || [];
   } catch (e) {
-    console.error("Erro ao carregar:", e);
     produtos.value = [];
   } finally {
     loading.value = false;
   }
 };
 
-// Lógica de Upload
 const triggerFileInput = () => fileInput.value?.click();
 
 const processarArquivo = async (event: Event) => {
@@ -127,22 +110,15 @@ const processarArquivo = async (event: Event) => {
   const file = target.files[0];
   const formData = new FormData();
   formData.append('file', file);
-
   importando.value = true;
 
   try {
-    // 1. Envia para a IA Ler
-    const respostaIA: any = await $fetch('/api/importar-pdf', {
-      method: 'POST',
-      body: formData
-    });
+    const respostaIA: any = await $fetch('/api/importar-pdf', { method: 'POST', body: formData });
 
     if (respostaIA.sucesso && respostaIA.produtos) {
-      // 2. Salva item por item no banco
       let salvos = 0;
       for (const item of respostaIA.produtos) {
         try {
-           // Limpeza simples do valor caso venha sujo da IA
            let precoLimpo = item.preco_venda;
            if (typeof item.preco_venda === 'string') {
               precoLimpo = parseFloat(item.preco_venda.replace(/[^\d,.-]/g, '').replace(',', '.'));
@@ -153,23 +129,19 @@ const processarArquivo = async (event: Event) => {
             body: {
               nome: item.nome,
               preco: precoLimpo,
-              estoque: 10, // Estoque inicial
+              estoque: 10, // Vai ser salvo em estoque_atual agora
               tipo: 'produto'
             }
           });
           salvos++;
-        } catch (err) {
-          console.error(`Falha ao salvar item: ${item.nome}`, err);
-        }
+        } catch (err) { console.error(err); }
       }
-      alert(`Sucesso! ${salvos} produtos foram importados.`);
-      await carregarProdutos(); // Recarrega a lista
+      alert(`Sucesso! ${salvos} produtos importados.`);
+      await carregarProdutos();
     } else {
       alert('A IA não conseguiu ler produtos neste PDF.');
     }
-
   } catch (e) {
-    console.error(e);
     alert('Erro ao processar importação.');
   } finally {
     importando.value = false;
