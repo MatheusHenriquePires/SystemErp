@@ -51,7 +51,7 @@
                   {{ new Date(pedido.data_criacao).toLocaleDateString('pt-BR') }}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right">
-                  {{ formatarMoeda(pedido.valor_total) }}
+                  {{ formatarMoeda(pedido.total) }}
                 </td>
                 
                 <td class="px-6 py-4 whitespace-nowrap text-center">
@@ -81,10 +81,7 @@
                     💰 Receber
                   </button>
 
-                  <NuxtLink :to="`/pedidos/${pedido.id}`" class="text-gray-400 hover:text-blue-600">
-                    📄 Ver
-                  </NuxtLink>
-                </td>
+                  </td>
               </tr>
             </tbody>
           </table>
@@ -112,7 +109,7 @@ const abas = [
 ];
 
 // Estilização das Badges de Status
-const classesStatus = {
+const classesStatus: Record<string, string> = {
   'ORCAMENTO': 'bg-yellow-100 text-yellow-800',
   'VENDA': 'bg-blue-100 text-blue-800',
   'PAGO': 'bg-green-100 text-green-800',
@@ -140,23 +137,28 @@ const mudarAba = (novoStatus: string) => {
   carregarPedidos(); // Recarrega a lista
 };
 
-// Ação de Atualizar Status (Conecta com a API POST)
+// Ação de Atualizar Status (Conectado com pedidos.put.ts)
 const atualizarStatus = async (id: number, novoStatus: string) => {
-  const acao = novoStatus === 'VENDA' ? 'Aprovar Orçamento e Baixar Estoque' : 'Confirmar Recebimento no Caixa';
+  const acao = novoStatus === 'VENDA' ? 'Aprovar Orçamento' : 'Confirmar Recebimento';
   
   if (!confirm(`Tem certeza que deseja ${acao}?`)) return;
 
   try {
-    await $fetch('/api/pedidos/status', {
-      method: 'POST',
-      body: { id, novo_status: novoStatus }
+    // CORREÇÃO 2 e 3: Método PUT e nome do campo 'status'
+    await $fetch('/api/pedidos', {
+      method: 'PUT',
+      body: { 
+        id: id, 
+        status: novoStatus // O backend espera 'status', não 'novo_status'
+      }
     });
     
     // Atualiza a lista para refletir a mudança
     await carregarPedidos();
-    alert('Sucesso! O sistema atualizou estoque/financeiro automaticamente.');
+    alert('Status atualizado com sucesso!');
     
   } catch (e) {
+    console.error(e);
     alert('Erro ao atualizar status.');
   }
 };
@@ -169,5 +171,5 @@ onMounted(() => {
   carregarPedidos();
 });
 
-useHead({ title: 'Pedidos - ERP' });
+useHead({ title: 'Gestão de Pedidos - ERP' });
 </script>
