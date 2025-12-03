@@ -59,7 +59,7 @@
 <script setup>
 import DashboardLayout from '~/layouts/DashboardLayout.vue';
 const route = useRoute();
-const { data: dados } = await useFetch(`/api/quotes/${route.params.id}`);
+const { data: dados } = await useFetch(`/api/pedidos/${route.params.id}`);
 
 function print() { window.print() }
 </script>
