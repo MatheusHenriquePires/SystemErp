@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
-        // CORRIGIDO: Removida a coluna 'ativo' que não existe no seu banco
+        // CORREÇÃO: Usamos ON CONFLICT para atualizar se o nome já existir
         const novoProduto = await sql`
             INSERT INTO produtos (
                 empresa_id,
@@ -46,6 +46,10 @@ export default defineEventHandler(async (event) => {
                 ${body.estoque || 0},
                 ${body.tipo || 'produto'}
             )
+            ON CONFLICT ON CONSTRAINT unique_produto_nome
+            DO UPDATE SET
+                preco = EXCLUDED.preco,
+                estoque_atual = EXCLUDED.estoque_atual
             RETURNING id
         `
 
