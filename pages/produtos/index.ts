@@ -32,6 +32,6 @@ export default defineEventHandler(async (event) => {
         return produtos
     } catch (error) {
         console.error('Erro ao buscar produtos:', error)
-        return [] // Retorna array vazio em caso de erro no banco
+        return []
     }
 })
