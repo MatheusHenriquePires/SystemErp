@@ -26,13 +26,13 @@ async function handleLogin() {
         // 2. Trata erro do backend
         if (error.value) {
             erro.value = error.value.data?.message || 'Erro ao entrar.'
-            
+
             return
         }
 
         // 3. Sucesso: Redireciona
         if (data.value && data.value.success) {
-            await navigateTo('/pedidos') 
+           window.location.href = '/'
         }
 
     } catch (e) {
