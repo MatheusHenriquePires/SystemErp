@@ -1,59 +1,74 @@
-// server/api/dashboard.ts (FINAL - CORRIGIDO NOMES DE COLUNAS)
-import sql from '~/server/database' 
+import postgres from 'postgres'
 import { defineEventHandler, getCookie, createError } from 'h3'
 import jwt from 'jsonwebtoken'
 
+const sql = postgres(process.env.DATABASE_URL as string)
+const EXPLICIT_SECRET = 'minha_chave_secreta_para_teste_2025_42';
+
 export default defineEventHandler(async (event) => {
-    // 1. SEGURANÇA
+    // 1. Segurança
     const cookie = getCookie(event, 'usuario_sessao')
     if (!cookie) throw createError({ statusCode: 401, message: 'Login necessário' })
     
-    const payload = jwt.decode(cookie) as { empresa_id: number }
-    const empresaId = payload.empresa_id 
+    try {
+        jwt.verify(cookie, EXPLICIT_SECRET);
+    } catch (e) {
+        throw createError({ statusCode: 403, message: 'Sessão inválida' })
+    }
 
-    // --- Nome da Tabela Financeira ---
-    const FINANCIAL_TABLE = 'caixa'; 
+    try {
+        // 2. Executa todas as consultas em paralelo (Muito rápido)
+        const [vendasHoje, orcamentosPendentes, vendasMes, historico] = await Promise.all([
+            
+            // A. Total Vendido Hoje (Status VENDA ou PAGO)
+            sql`
+                SELECT COALESCE(SUM(total), 0) as total 
+                FROM pedidos 
+                WHERE status IN ('VENDA', 'PAGO') 
+                AND data_criacao::date = CURRENT_DATE
+            `,
 
-    // 2. KPIs (Totais)
-    const kpis = await sql`
-        SELECT 
-            COALESCE(SUM(CASE WHEN valor > 0 THEN valor ELSE 0 END), 0) as receitas,
-            COALESCE(SUM(CASE WHEN valor < 0 THEN ABS(valor) ELSE 0 END), 0) as despesas,
-            (COALESCE(SUM(valor), 0)) as saldo_atual
-        FROM ${sql(FINANCIAL_TABLE)}
-        WHERE empresa_id = ${empresaId}
-    `
+            // B. Quantidade de Orçamentos Pendentes
+            sql`
+                SELECT COUNT(*) as qtd 
+                FROM pedidos 
+                WHERE status = 'ORCAMENTO'
+            `,
 
-    // 3. Lista (Últimos 5) - Usa data_movimento e mapeia tipo para categoria
-    const lista = await sql`
-        SELECT 
-            descricao, 
-            valor, 
-            data_movimento as data, -- <-- CORREÇÃO
-            tipo as categoria       -- <-- CORREÇÃO
-        FROM ${sql(FINANCIAL_TABLE)}
-        WHERE empresa_id = ${empresaId}
-        ORDER BY data_movimento DESC 
-        LIMIT 5
-    `
+            // C. Total Vendido no Mês Atual
+            sql`
+                SELECT COALESCE(SUM(total), 0) as total 
+                FROM pedidos 
+                WHERE status IN ('VENDA', 'PAGO') 
+                AND data_criacao >= date_trunc('month', CURRENT_DATE)
+            `,
 
-    // 4. GRÁFICO
-    const grafico = await sql`
-        SELECT 
-            TO_CHAR(data_movimento, 'Mon') as mes, -- <-- CORREÇÃO
-            EXTRACT(MONTH FROM data_movimento) as numero_mes, -- <-- CORREÇÃO
-            COALESCE(SUM(CASE WHEN valor > 0 THEN valor ELSE 0 END), 0) as receita,
-            COALESCE(SUM(CASE WHEN valor < 0 THEN ABS(valor) ELSE 0 END), 0) as despesa
-        FROM ${sql(FINANCIAL_TABLE)}
-        WHERE empresa_id = ${empresaId}
-        AND data_movimento >= CURRENT_DATE - INTERVAL '6 months' -- <-- CORREÇÃO
-        GROUP BY 1, 2
-        ORDER BY 2 ASC
-    `
+            // D. Dados para o Gráfico (Últimos 7 dias)
+            sql`
+                SELECT 
+                    to_char(data_criacao, 'DD/MM') as dia,
+                    COALESCE(SUM(total), 0) as total
+                FROM pedidos
+                WHERE status IN ('VENDA', 'PAGO')
+                AND data_criacao > CURRENT_DATE - INTERVAL '7 days'
+                GROUP BY 1
+                ORDER BY 1
+            `
+        ])
 
-    return {
-        kpis: kpis[0],
-        lista: lista,
-        grafico: grafico 
+        // 3. Retorna tudo formatado
+        return {
+            hoje: Number(vendasHoje[0].total),
+            orcamentos: Number(orcamentosPendentes[0].qtd),
+            mes: Number(vendasMes[0].total),
+            grafico: historico.map(h => ({
+                dia: h.dia,
+                total: Number(h.total)
+            }))
+        }
+
+    } catch (error) {
+        console.error("Erro Dashboard:", error)
+        throw createError({ statusCode: 500, message: 'Erro ao carregar dashboard' })
     }
 })

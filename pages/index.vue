@@ -1,110 +1,99 @@
 <template>
   <DashboardLayout>
-    <div class="p-8">
+    <div class="px-4 py-6 md:px-6 md:py-8 lg:px-8">
       
-      <header class="mb-8 flex justify-between items-end">
-        <div>
-          <h1 class="text-3xl font-bold text-slate-800 dark:text-gray-100">Painel de Controle</h1>
-          <p class="text-slate-500 dark:text-gray-400">Bem-vindo ao NetMark ERP. O que você quer fazer hoje?</p>
-        </div>
-        <div class="text-right hidden md:block">
-          <p class="text-sm font-bold text-slate-600 dark:text-gray-300">Hoje</p>
-          <p class="text-slate-500 dark:text-gray-400">{{ new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }) }}</p>
-        </div>
-      </header>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        
-        <NuxtLink to="/pedidos" class="card-access bg-white dark:bg-gray-800 shadow-lg border border-slate-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 transition group cursor-pointer">
-          <div class="icon-wrapper bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300">
-            <span class="text-2xl">🧾</span>
-          </div>
-          <h3 class="font-bold text-slate-800 dark:text-gray-200">Pedidos</h3>
-          <p class="text-xs text-slate-500 dark:text-gray-400 mt-1">Gerenciar propostas e histórico de vendas</p>
-        </NuxtLink>
-
-        <NuxtLink to="/produtos/importar" class="card-access bg-white dark:bg-gray-800 shadow-lg border border-slate-200 dark:border-gray-700 hover:border-teal-500 transition group cursor-pointer">
-          <div class="icon-wrapper bg-teal-100 dark:bg-teal-900/50 text-teal-600 dark:text-teal-300">
-            <span class="text-2xl">📥</span>
-          </div>
-          <h3 class="font-bold text-slate-800 dark:text-gray-200">Importar Tabela</h3>
-          <p class="text-xs text-slate-500 dark:text-gray-400 mt-1">Atualizar catálogo via PDF/Telegram</p>
-        </NuxtLink>
-
-        <NuxtLink to="/clientes" class="card-access bg-white dark:bg-gray-800 shadow-lg border border-slate-200 dark:border-gray-700 hover:border-purple-500 transition group cursor-pointer">
-          <div class="icon-wrapper bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300">
-            <span class="text-2xl">👥</span>
-          </div>
-          <h3 class="font-bold text-slate-800 dark:text-gray-200">Clientes</h3>
-          <p class="text-xs text-slate-500 dark:text-gray-400 mt-1">Base de contatos e CRM</p>
-        </NuxtLink>
-
-        <NuxtLink to="/produtos" class="card-access bg-white dark:bg-gray-800 shadow-lg border border-slate-200 dark:border-gray-700 hover:border-orange-500 transition group cursor-pointer">
-          <div class="icon-wrapper bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-300">
-            <span class="text-2xl">📦</span>
-          </div>
-          <h3 class="font-bold text-slate-800 dark:text-gray-200">Produtos</h3>
-          <p class="text-xs text-slate-500 dark:text-gray-400 mt-1">Estoque e Preços</p>
-        </NuxtLink>
-
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-slate-800">📊 Visão Geral</h1>
+        <p class="text-slate-500">Bem-vindo ao painel de controle do seu ERP.</p>
       </div>
-
-      <h2 class="text-lg font-bold text-slate-800 dark:text-gray-200 mb-4 flex items-center gap-2">
-        <span class="w-2 h-6 bg-blue-600 rounded-full"></span>
-        Resumo Financeiro
-      </h2>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-slate-200 dark:border-gray-700 shadow-sm">
-          <p class="text-sm text-slate-500 dark:text-gray-400 mb-1">Saldo Geral</p>
-          <h3 class="text-3xl font-bold text-slate-800 dark:text-gray-100">
-            R$ {{ Number(dados?.kpis?.saldo_atual || 0).toFixed(2) }}
-          </h3>
+        
+        <div class="bg-white p-6 rounded-xl shadow border border-slate-100 flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-slate-500 uppercase tracking-wider">Vendas Hoje</p>
+            <h3 class="text-2xl font-bold text-emerald-600 mt-1">
+              {{ loading ? '...' : formatarMoeda(dados.hoje) }}
+            </h3>
+          </div>
+          <div class="bg-emerald-100 p-3 rounded-full text-emerald-600">
+            💰
+          </div>
         </div>
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-slate-200 dark:border-gray-700 shadow-sm">
-           <p class="text-sm text-slate-500 dark:text-gray-400 mb-1">Entradas (Total)</p>
-           <h3 class="text-2xl font-bold text-emerald-600">
-             + R$ {{ Number(dados?.kpis?.receitas || 0).toFixed(2) }}
-           </h3>
+
+        <div class="bg-white p-6 rounded-xl shadow border border-slate-100 flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-slate-500 uppercase tracking-wider">Orçamentos Abertos</p>
+            <h3 class="text-2xl font-bold text-amber-600 mt-1">
+              {{ loading ? '...' : dados.orcamentos }}
+            </h3>
+          </div>
+          <div class="bg-amber-100 p-3 rounded-full text-amber-600">
+            📝
+          </div>
         </div>
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-slate-200 dark:border-gray-700 shadow-sm">
-           <p class="text-sm text-slate-500 dark:text-gray-400 mb-1">Saídas (Total)</p>
-           <h3 class="text-2xl font-bold text-rose-600">
-             - R$ {{ Math.abs(Number(dados?.kpis?.despesas || 0)).toFixed(2) }}
-           </h3>
+
+        <div class="bg-white p-6 rounded-xl shadow border border-slate-100 flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-slate-500 uppercase tracking-wider">Faturamento Mês</p>
+            <h3 class="text-2xl font-bold text-blue-600 mt-1">
+              {{ loading ? '...' : formatarMoeda(dados.mes) }}
+            </h3>
+          </div>
+          <div class="bg-blue-100 p-3 rounded-full text-blue-600">
+            📅
+          </div>
         </div>
+
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-slate-200 dark:border-gray-700 shadow-sm">
-          <h3 class="font-bold text-slate-800 dark:text-gray-200 mb-4">Fluxo de Caixa</h3>
-          <ClientOnly>
-            <apexchart type="area" height="250" :options="chartOptions" :series="series"></apexchart>
-          </ClientOnly>
+        <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow border border-slate-100">
+          <h3 class="text-lg font-bold text-slate-700 mb-6">Desempenho (Últimos 7 dias)</h3>
+          
+          <div v-if="loading" class="h-64 flex items-center justify-center text-slate-400">
+            Carregando gráfico...
+          </div>
+          
+          <div v-else class="h-64 flex items-end justify-between space-x-2">
+            <div v-if="dados.grafico.length === 0" class="w-full text-center text-gray-400">
+                Sem vendas nos últimos 7 dias.
+             </div>
+
+            <div v-for="(dia, index) in dados.grafico" :key="index" class="flex flex-col items-center flex-1 group">
+              
+              <div class="mb-2 opacity-0 group-hover:opacity-100 transition text-xs bg-slate-800 text-white py-1 px-2 rounded -translate-y-1">
+                {{ formatarMoeda(dia.total) }}
+              </div>
+              
+              <div 
+                class="w-full bg-blue-500 rounded-t-md hover:bg-blue-600 transition-all duration-500"
+                :style="{ height: `${calcularAltura(dia.total)}%` }"
+              ></div>
+              
+              <div class="mt-2 text-xs text-slate-500 font-medium">{{ dia.dia }}</div>
+            </div>
+          </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-xl shadow-sm overflow-hidden flex flex-col">
-          <div class="px-6 py-4 border-b border-slate-100 dark:border-gray-700 font-bold bg-slate-50 dark:bg-gray-700 text-slate-800 dark:text-gray-200">
-            Últimas Movimentações
-          </div>
-          <div class="flex-1 overflow-y-auto max-h-[250px]">
-            <table class="w-full text-left text-sm">
-              <tbody class="divide-y divide-slate-100 dark:divide-gray-700">
-                <tr v-for="(item, index) in dados?.lista" :key="index" class="hover:bg-slate-50 dark:hover:bg-gray-700">
-                  <td class="px-6 py-3">
-                    <p class="font-medium text-slate-800 dark:text-gray-300">{{ item.descricao }}</p>
-                    <p class="text-xs text-slate-500 dark:text-gray-400">{{ new Date(item.data).toLocaleDateString() }}</p>
-                  </td>
-                  <td class="px-6 py-3 text-right font-bold" :class="item.valor < 0 ? 'text-rose-600' : 'text-emerald-600'">
-                    R$ {{ Math.abs(item.valor).toFixed(2) }}
-                  </td>
-                </tr>
-                <tr v-if="!dados?.lista?.length">
-                  <td class="p-6 text-center text-slate-400 dark:text-gray-500" colspan="2">Nada registrado ainda.</td>
-                </tr>
-              </tbody>
-            </table>
+        <div class="bg-white p-6 rounded-xl shadow border border-slate-100">
+          <h3 class="text-lg font-bold text-slate-700 mb-4">Acesso Rápido</h3>
+          <div class="space-y-3">
+            <NuxtLink to="/pedidos/novo" class="flex items-center p-3 bg-slate-50 hover:bg-blue-50 rounded-lg transition group">
+              <span class="bg-blue-100 text-blue-600 p-2 rounded-lg mr-3 group-hover:bg-blue-200">+</span>
+              <span class="text-slate-700 font-medium group-hover:text-blue-700">Novo Orçamento</span>
+            </NuxtLink>
+            
+            <NuxtLink to="/pedidos" class="flex items-center p-3 bg-slate-50 hover:bg-emerald-50 rounded-lg transition group">
+              <span class="bg-emerald-100 text-emerald-600 p-2 rounded-lg mr-3 group-hover:bg-emerald-200">📦</span>
+              <span class="text-slate-700 font-medium group-hover:text-emerald-700">Ver Pedidos</span>
+            </NuxtLink>
+
+            <NuxtLink to="/clientes" class="flex items-center p-3 bg-slate-50 hover:bg-purple-50 rounded-lg transition group">
+              <span class="bg-purple-100 text-purple-600 p-2 rounded-lg mr-3 group-hover:bg-purple-200">👥</span>
+              <span class="text-slate-700 font-medium group-hover:text-purple-700">Gerenciar Clientes</span>
+            </NuxtLink>
           </div>
         </div>
 
@@ -117,53 +106,48 @@
 <script setup>
 import DashboardLayout from '~/layouts/DashboardLayout.vue';
 
-// Usa o modo de cor do Nuxt para reatividade
-const colorMode = useColorMode(); 
-// Busca dados Unificados da API
-const { data: dados, refresh } = await useFetch('/api/dashboard')
+const dados = ref({
+  hoje: 0,
+  orcamentos: 0,
+  mes: 0,
+  grafico: []
+});
+const loading = ref(true);
+const maiorValorGrafico = ref(100); // Para calcular a escala das barras
 
-// Configuração do Gráfico (Computada para reagir à mudança de tema)
-const chartOptions = computed(() => ({
-  chart: { 
-    type: 'area', 
-    toolbar: { show: false },
-    background: colorMode.value === 'dark' ? '#1f2937' : '#FFFFFF', 
-  },
-  dataLabels: { enabled: false },
-  stroke: { curve: 'smooth', width: 2 },
-  xaxis: { 
-    categories: dados.value?.grafico?.map(item => item.mes) || [],
-    labels: { style: { colors: colorMode.value === 'dark' ? '#D1D5DB' : '#4B5563' } }
-  },
-  yaxis: {
-    labels: { style: { colors: colorMode.value === 'dark' ? '#D1D5DB' : '#4B5563' } }
-  },
-  colors: ['#10b981', '#f43f5e'],
-  fill: { opacity: 0.1 },
-  tooltip: { theme: colorMode.value }
-}))
-
-const series = computed(() => [
-  { name: 'Receitas', data: dados.value?.grafico?.map(item => item.receita) || [] },
-  { name: 'Despesas', data: dados.value?.grafico?.map(item => item.despesa) || [] }
-])
-
-const cookie = useCookie('usuario_sessao')
-function logout() {
-  cookie.value = null
-  window.location.href = '/login'
+// Função para buscar dados do backend
+async function carregarDashboard() {
+  loading.value = true;
+  try {
+    const response = await $fetch('/api/dashboard');
+    dados.value = response;
+    
+    // Calcula qual é o maior valor para definir a altura de 100% do gráfico
+    if (response.grafico.length > 0) {
+        const max = Math.max(...response.grafico.map(d => d.total));
+        maiorValorGrafico.value = max > 0 ? max : 100;
+    }
+  } catch (e) {
+    console.error("Erro ao carregar dashboard:", e);
+  } finally {
+    loading.value = false;
+  }
 }
 
-onMounted(() => refresh());
+// Calcula a altura da barra em porcentagem (regra de 3)
+function calcularAltura(valor) {
+    if (maiorValorGrafico.value === 0) return 0;
+    // Deixa pelo menos 5% de altura se o valor for > 0 para a barra aparecer
+    const percent = (valor / maiorValorGrafico.value) * 100;
+    return valor > 0 && percent < 5 ? 5 : percent;
+}
+
+const formatarMoeda = (val) => 
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(val));
+
+onMounted(() => {
+  carregarDashboard();
+});
+
+useHead({ title: 'Dashboard - NetMark ERP' });
 </script>
-
-<style scoped>
-/* Define o estilo do cartão de acesso, com borda na hover para dar feedback */
-.card-access {
-    @apply p-6 rounded-xl text-center flex flex-col items-center shadow-md border border-slate-200 dark:border-gray-700 transition;
-}
-/* Estilização do círculo do ícone */
-.icon-wrapper {
-    @apply w-12 h-12 rounded-full flex items-center justify-center mb-3 transition;
-}
-</style>
