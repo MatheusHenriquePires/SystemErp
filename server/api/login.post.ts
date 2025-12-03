@@ -1,60 +1,32 @@
-// server/api/login.post.ts (CORRIGIDO PARA USAR JWT)
-import postgres from 'postgres'
-import { defineEventHandler, readBody, setCookie, createError } from 'h3'
-import jwt from 'jsonwebtoken' // NOVO: Módulo JWT
-
-// CRÍTICO: Se você não está usando bcryptjs, é vital que a senha seja encriptada no futuro.
-// No momento, mantemos a sua busca por senha simples, mas preste atenção à segurança.
-// import bcrypt from 'bcryptjs' 
+// server/api/login.post.ts
+// ... imports ...
 
 const sql = postgres(process.env.DATABASE_URL as string)
+// DEFINIÇÃO: Use uma chave forte e a defina explicitamente.
+const EXPLICIT_SECRET = 'minha_chave_secreta_para_teste_2025_42'; 
 
 export default defineEventHandler(async (event) => {
-    const body = await readBody(event)
-    const { email, senha } = body
+    // ... [código de leitura de email/senha] ...
 
-    try {
-        // 1. Buscar e autenticar no banco (mantendo sua autenticação simples)
-        const usuarios = await sql`
-            SELECT id, empresa_id, nome FROM usuarios 
-            WHERE email = ${email} 
-            AND senha = ${senha}
-        `
-        
-        if (usuarios.length === 0) {
-            throw createError({ statusCode: 401, message: 'Email ou senha inválidos' })
-        }
+    // ... [código de busca e autenticação no banco] ...
 
-        const usuario = usuarios[0]
-        
-        // 2. CRIAR O TOKEN JWT (O FORMATO CORRETO!)
-        const payload = { 
-            id: usuario.id, 
-            empresa_id: usuario.empresa_id // CRÍTICO: O pedidos.post.ts PRECISA desta chave
-        }
-        
-        // Assina o token JWT, com 2 horas de validade (maior segurança contra expiração)
-        const token = jwt.sign(payload, process.env.JWT_SECRET || 'SEGREDO_FORTE_AQUI', { 
-            expiresIn: '2h' 
-        })
+    // ... [código de definição do payload] ...
 
-        // 3. Define o cookie de sessão com o TOKEN JWT
-        setCookie(event, 'usuario_sessao', token, {
-            httpOnly: true, // Impedir acesso via JS (segurança)
-            secure: process.env.NODE_ENV === 'production', // Só enviar em HTTPS
-            sameSite: 'lax',
-            path: '/', // CRÍTICO: Válido em toda a aplicação
-            maxAge: 60 * 60 * 2 // 2 horas (em segundos)
-        })
+    // 2. CRIAR O TOKEN JWT (USANDO A CHAVE DEFINIDA)
+    const token = jwt.sign(payload, EXPLICIT_SECRET, { // <-- MUDANÇA AQUI
+        expiresIn: '2h' 
+    })
 
-        return { sucesso: true, usuario }
+    // 3. Define o cookie de sessão com o TOKEN JWT
+    setCookie(event, 'usuario_sessao', token, {
+        httpOnly: true, // Impedir acesso via JS (segurança)
+        secure: process.env.NODE_ENV === 'production', 
+        sameSite: 'lax',
+        path: '/', 
+        maxAge: 60 * 60 * 2 // 2 horas (em segundos)
+    })
 
-    } catch (erro) {
-        // Se for um erro 401 que já lançamos, propaga. Senão, é 500.
-        if (erro.statusCode === 401) {
-             throw erro;
-        }
-        console.error('🔥 ERRO CRÍTICO NO LOGIN:', erro)
-        throw createError({ statusCode: 500, message: 'Erro interno no servidor' })
-    }
+    return { sucesso: true, usuario }
+
+    // ... [catch block] ...
 })
