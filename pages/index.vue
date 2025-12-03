@@ -15,32 +15,32 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         
-        <NuxtLink to="/pedidos" class="card-access bg-white dark:bg-[#282828] shadow-md dark:shadow-2xl border border-slate-200 dark:border-[#444] hover:border-blue-500 dark:hover:border-blue-400 transition group cursor-pointer">
-          <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition">
+        <NuxtLink to="/pedidos" class="card-access bg-white dark:bg-gray-800 shadow-lg border border-slate-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 transition group cursor-pointer">
+          <div class="icon-wrapper bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300">
             <span class="text-2xl">🧾</span>
           </div>
           <h3 class="font-bold text-slate-800 dark:text-gray-200">Pedidos</h3>
           <p class="text-xs text-slate-500 dark:text-gray-400 mt-1">Gerenciar propostas e histórico de vendas</p>
         </NuxtLink>
 
-        <NuxtLink to="/produtos/importar" class="card-access bg-white dark:bg-[#282828] shadow-md dark:shadow-2xl border border-slate-200 dark:border-[#444] hover:border-teal-500 transition group cursor-pointer">
-          <div class="w-12 h-12 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition">
+        <NuxtLink to="/produtos/importar" class="card-access bg-white dark:bg-gray-800 shadow-lg border border-slate-200 dark:border-gray-700 hover:border-teal-500 transition group cursor-pointer">
+          <div class="icon-wrapper bg-teal-100 dark:bg-teal-900/50 text-teal-600 dark:text-teal-300">
             <span class="text-2xl">📥</span>
           </div>
           <h3 class="font-bold text-slate-800 dark:text-gray-200">Importar Tabela</h3>
           <p class="text-xs text-slate-500 dark:text-gray-400 mt-1">Atualizar catálogo via PDF/Telegram</p>
         </NuxtLink>
 
-        <NuxtLink to="/clientes" class="card-access bg-white dark:bg-[#282828] shadow-md dark:shadow-2xl border border-slate-200 dark:border-[#444] hover:border-purple-500 transition group cursor-pointer">
-          <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition">
+        <NuxtLink to="/clientes" class="card-access bg-white dark:bg-gray-800 shadow-lg border border-slate-200 dark:border-gray-700 hover:border-purple-500 transition group cursor-pointer">
+          <div class="icon-wrapper bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300">
             <span class="text-2xl">👥</span>
           </div>
           <h3 class="font-bold text-slate-800 dark:text-gray-200">Clientes</h3>
           <p class="text-xs text-slate-500 dark:text-gray-400 mt-1">Base de contatos e CRM</p>
         </NuxtLink>
 
-        <NuxtLink to="/produtos" class="card-access bg-white dark:bg-[#282828] shadow-md dark:shadow-2xl border border-slate-200 dark:border-[#444] hover:border-orange-500 transition group cursor-pointer">
-          <div class="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition">
+        <NuxtLink to="/produtos" class="card-access bg-white dark:bg-gray-800 shadow-lg border border-slate-200 dark:border-gray-700 hover:border-orange-500 transition group cursor-pointer">
+          <div class="icon-wrapper bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-300">
             <span class="text-2xl">📦</span>
           </div>
           <h3 class="font-bold text-slate-800 dark:text-gray-200">Produtos</h3>
@@ -117,31 +117,30 @@
 <script setup>
 import DashboardLayout from '~/layouts/DashboardLayout.vue';
 
+// Usa o modo de cor do Nuxt para reatividade
 const colorMode = useColorMode(); 
-
 // Busca dados Unificados da API
 const { data: dados, refresh } = await useFetch('/api/dashboard')
 
-// Config do Gráfico (Computada para reagir à mudança de tema)
+// Configuração do Gráfico (Computada para reagir à mudança de tema)
 const chartOptions = computed(() => ({
   chart: { 
     type: 'area', 
     toolbar: { show: false },
-    // Fundo do ApexChart se ajustando ao tema
     background: colorMode.value === 'dark' ? '#1f2937' : '#FFFFFF', 
   },
   dataLabels: { enabled: false },
   stroke: { curve: 'smooth', width: 2 },
   xaxis: { 
     categories: dados.value?.grafico?.map(item => item.mes) || [],
-    labels: { style: { colors: colorMode.value === 'dark' ? '#D1D5DB' : '#4B5563' } } // Cores dos labels do eixo
+    labels: { style: { colors: colorMode.value === 'dark' ? '#D1D5DB' : '#4B5563' } }
   },
   yaxis: {
     labels: { style: { colors: colorMode.value === 'dark' ? '#D1D5DB' : '#4B5563' } }
   },
   colors: ['#10b981', '#f43f5e'],
   fill: { opacity: 0.1 },
-  tooltip: { theme: colorMode.value } // Tema do tooltip
+  tooltip: { theme: colorMode.value }
 }))
 
 const series = computed(() => [
@@ -157,3 +156,14 @@ function logout() {
 
 onMounted(() => refresh());
 </script>
+
+<style scoped>
+/* Define o estilo do cartão de acesso, com borda na hover para dar feedback */
+.card-access {
+    @apply p-6 rounded-xl text-center flex flex-col items-center shadow-md border border-slate-200 dark:border-gray-700 transition;
+}
+/* Estilização do círculo do ícone */
+.icon-wrapper {
+    @apply w-12 h-12 rounded-full flex items-center justify-center mb-3 transition;
+}
+</style>
