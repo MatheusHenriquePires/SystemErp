@@ -40,27 +40,30 @@
           Sair do Sistema
         </button>
       </div>
-    </aside>
+  </aside>
 
-    <main class="flex-1 overflow-y-auto">
-        <header class="sticky top-0 z-10 bg-white dark:bg-[#1E1E1E] border-b border-slate-200 dark:border-[#333] p-4 shadow-sm flex items-center justify-end">
-            <button @click="toggleTheme" class="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#333] transition">
-                <span v-if="colorMode.value === 'dark'">💡</span>
-                <span v-else>🌙</span>
-            </button>
-            <div class="flex items-center gap-3 ml-4">
-                <slot name="header-actions" />
-            </div>
-        </header>
+  <main class="flex-1 flex flex-col">
+    <header class="sticky top-0 z-10 bg-white dark:bg-[#1E1E1E] border-b border-slate-200 dark:border-gray-800">
+      <button @click="toggleTheme" class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-[#333]">
+        <ClientOnly>
+          <span v-if="colorMode.value === 'dark'">💡</span>
+          <span v-else>🌙</span>
+        </ClientOnly>
+      </button>
+    </header>
 
-        <div class="p-8">
-            <slot /> 
-        </div>
-    </main>
+    <div class="p-8">
+      <slot />
+    </div>
+  </main>
   </div>
 </template>
 
 <script setup>
+import { useColorMode } from '@nuxtjs/color-mode';
+import { useCookie } from '#app';
+import ClientOnly from 'vue-client-only';
+
 // Lógica do tema e logout permanece a mesma
 const colorMode = useColorMode(); 
 function toggleTheme() {
