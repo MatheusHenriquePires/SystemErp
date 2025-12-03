@@ -66,13 +66,21 @@
 
                 <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2">
                   
-                <button v-if="pedido.status === 'ORCAMENTO' || pedido.status === 'PENDENTE'" 
-  @click="atualizarStatus(pedido.id, 'VENDA')"
-  class="text-white bg-green-500 hover:bg-green-600 px-3 py-1 rounded shadow-sm transition"
-  title="Aprovar e Virar Venda"
->
-  ✅ Aprovar
-</button>
+                  <button 
+                    @click="abrirImpressao(pedido.id)"
+                    class="text-slate-600 bg-slate-200 hover:bg-slate-300 px-3 py-1 rounded shadow-sm transition"
+                    title="Imprimir Pedido"
+                  >
+                     🖨️
+                  </button>
+
+                  <button v-if="pedido.status === 'ORCAMENTO' || pedido.status === 'PENDENTE'" 
+                    @click="atualizarStatus(pedido.id, 'VENDA')"
+                    class="text-white bg-green-500 hover:bg-green-600 px-3 py-1 rounded shadow-sm transition"
+                    title="Aprovar e Virar Venda"
+                  >
+                    ✅ Aprovar
+                  </button>
 
                   <button v-if="pedido.status === 'VENDA'" 
                     @click="atualizarStatus(pedido.id, 'PAGO')"
@@ -112,7 +120,7 @@ const classesStatus: Record<string, string> = {
   'ORCAMENTO': 'bg-yellow-100 text-yellow-800',
   'VENDA': 'bg-blue-100 text-blue-800',
   'PAGO': 'bg-green-100 text-green-800',
-  'PENDENTE': 'bg-gray-100 text-gray-800' // Caso algum antigo tenha ficado como pendente
+  'PENDENTE': 'bg-gray-100 text-gray-800'
 };
 
 // Buscar Pedidos
@@ -129,7 +137,7 @@ const carregarPedidos = async () => {
   }
 };
 
-// Trocar de Aba
+// Mudar Aba
 const mudarAba = (novoStatus: string) => {
   filtroAtual.value = novoStatus;
   carregarPedidos();
@@ -142,7 +150,6 @@ const atualizarStatus = async (id: number, novoStatus: string) => {
   if (!confirm(`Tem certeza que deseja ${acao}?`)) return;
 
   try {
-    // CORREÇÃO 2: Chamada PUT correta para o novo arquivo que criamos
     await $fetch('/api/pedidos', {
       method: 'PUT',
       body: { 
@@ -151,7 +158,6 @@ const atualizarStatus = async (id: number, novoStatus: string) => {
       }
     });
     
-    // Atualiza a lista na hora
     await carregarPedidos();
     alert('Status atualizado com sucesso!');
     
@@ -159,6 +165,12 @@ const atualizarStatus = async (id: number, novoStatus: string) => {
     console.error(e);
     alert('Erro ao atualizar status.');
   }
+};
+
+// Função de Imprimir (NOVA)
+const abrirImpressao = (id: number) => {
+  // Abre a página de impressão em uma nova aba
+  window.open(`/pedidos/imprimir/${id}`, '_blank');
 };
 
 const formatarMoeda = (val: number) => 
