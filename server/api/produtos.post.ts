@@ -31,22 +31,20 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
-        // CORREÇÃO: Mudamos de 'estoque' para 'estoque_atual'
+        // CORRIGIDO: Removida a coluna 'ativo' que não existe no seu banco
         const novoProduto = await sql`
             INSERT INTO produtos (
                 empresa_id,
                 nome,
                 preco,
-                estoque_atual,  -- <--- O NOME CORRETO DA COLUNA
-                tipo,
-                ativo
+                estoque_atual,
+                tipo
             ) VALUES (
                 ${usuario.empresa_id},
                 ${body.nome},
                 ${body.preco},
                 ${body.estoque || 0},
-                ${body.tipo || 'produto'},
-                true
+                ${body.tipo || 'produto'}
             )
             RETURNING id
         `
