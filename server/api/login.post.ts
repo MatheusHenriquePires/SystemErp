@@ -5,7 +5,7 @@ import { defineEventHandler, readBody, setCookie, createError } from 'h3'
 const sql = postgres(process.env.DATABASE_URL as string)
 
 // ESTA É A CHAVE MESTRA. 
-// Dica: No mundo real, coloque isso no .env (ex: process.env.JWT_SECRET)
+
 const EXPLICIT_SECRET = 'minha_chave_secreta_para_teste_2025_42'; 
 
 export default defineEventHandler(async (event) => {
@@ -21,16 +21,15 @@ export default defineEventHandler(async (event) => {
         throw createError({ statusCode: 401, message: 'Email ou senha incorretos' })
     }
 
-    // 2. CRIA O TOKEN (ASSINATURA)
-    // Aqui garantimos que o token é gerado com a NOSSA chave secreta
+   
     const token = jwt.sign(
         { 
             id: usuario.id, 
             email: usuario.email, 
-            empresa_id: usuario.empresa_id // Dados que você quer ler depois
+            empresa_id: usuario.empresa_id /
         }, 
         EXPLICIT_SECRET, 
-        { expiresIn: '7d' } // Validade
+        { expiresIn: '7d' } 
     );
 
     // 3. Salva no Cookie
