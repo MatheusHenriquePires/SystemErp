@@ -32,24 +32,44 @@ export default defineEventHandler(async (event) => {
         const statusAntigo = pedidoAtual[0].status;
         const novoStatus = body.status;
 
+        console.log(`🔄 Alterando Pedido #${body.id}: ${statusAntigo} -> ${novoStatus}`);
+
         // 3. LÓGICA DE ESTOQUE (BAIXA)
-        // Só executa se estiver mudando de ORCAMENTO para VENDA
         if (statusAntigo === 'ORCAMENTO' && novoStatus === 'VENDA') {
             
-            // Busca os itens desse pedido
+            // Busca os itens vinculados a produtos
             const itens = await sql`
-                SELECT produto_id, quantidade 
+                SELECT produto_id, quantidade, descricao 
                 FROM pedidos_itens 
-                WHERE pedido_id = ${body.id} AND produto_id IS NOT NULL
+                WHERE pedido_id = ${body.id}
             `
 
-            // Para cada item, subtrai a quantidade vendida da QUANTIDADE em estoque
+            console.log(`📦 Encontrados ${itens.length} itens para baixar estoque.`);
+
             for (const item of itens) {
-                await sql`
-                    UPDATE produtos 
-                    SET quantidade = quantidade - ${item.quantidade} -- MUDANÇA AQUI (Usando 'quantidade' como estoque)
-                    WHERE id = ${item.produto_id}
-                `
+                if (!item.produto_id) {
+                    console.warn(`⚠️ Item "${item.descricao}" não tem ID de produto vinculado. Pulando...`);
+                    continue;
+                }
+
+                console.log(`🔻 Baixando ${item.quantidade} do Produto ID ${item.produto_id}...`);
+
+                try {
+                    // TENTATIVA A: Coluna 'estoque'
+                    await sql`
+                        UPDATE produtos 
+                        SET estoque = estoque - ${item.quantidade}
+                        WHERE id = ${item.produto_id}
+                    `
+                } catch (err) {
+                    // TENTATIVA B: Coluna 'quantidade' (caso o nome seja diferente)
+                    console.log(`ℹ️ Coluna 'estoque' não encontrada, tentando 'quantidade'...`);
+                    await sql`
+                        UPDATE produtos 
+                        SET quantidade = quantidade - ${item.quantidade}
+                        WHERE id = ${item.produto_id}
+                    `
+                }
             }
         }
 
@@ -57,7 +77,11 @@ export default defineEventHandler(async (event) => {
         if (statusAntigo === 'VENDA' && novoStatus === 'CANCELADO') {
              const itens = await sql`SELECT produto_id, quantidade FROM pedidos_itens WHERE pedido_id = ${body.id} AND produto_id IS NOT NULL`
              for (const item of itens) {
-                await sql`UPDATE produtos SET quantidade = quantidade + ${item.quantidade} WHERE id = ${item.produto_id}`
+                try {
+                    await sql`UPDATE produtos SET estoque = estoque + ${item.quantidade} WHERE id = ${item.produto_id}`
+                } catch(e) {
+                    await sql`UPDATE produtos SET quantidade = quantidade + ${item.quantidade} WHERE id = ${item.produto_id}`
+                }
              }
         }
 
@@ -72,7 +96,7 @@ export default defineEventHandler(async (event) => {
         return { success: true, novo_status: resultado[0].status }
 
     } catch (error: any) {
-        console.error("Erro Put:", error)
+        console.error("❌ Erro Put:", error)
         throw createError({ statusCode: 500, message: error.message })
     }
 })
