@@ -33,10 +33,10 @@ export default defineEventHandler(async (event) => {
 
     // 3. Salva no Cookie
   setCookie(event, 'usuario_sessao', token, {
-        httpOnly: true,     
+        httpOnly: false,    
         secure: false,      
-        maxAge: 60 * 60 * 24 * 7, // 7 dias
-        path: '/'          
+        maxAge: 60 * 60 * 24 * 7,
+        path: '/'
     })
 
     return { success: true, user: usuario }
