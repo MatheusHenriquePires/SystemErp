@@ -28,14 +28,14 @@ export default defineEventHandler(async (event) => {
 
         // 2. Pega os Itens (da tabela ITENS_PEDIDO)
         const itens = await sql`
-            SELECT 
-                nome_produto AS name, 
-                quantidade AS quantity, 
-                preco_unitario AS unit_price, 
-                total_preco AS total_price
-            FROM itens_pedido
-            WHERE pedido_id = ${id}
-        `
+    SELECT 
+        nome_produto AS name, 
+        quantidade AS quantity, 
+        preco_unitario AS unit_price, 
+        total_preco AS total_price
+    FROM itens_pedido -- <--- BUSCA NA TABELA CORRETA
+    WHERE pedido_id = ${id}
+`
 
         // 3. Junta tudo num pacote limpo para o front
         return {
