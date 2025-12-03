@@ -1,54 +1,44 @@
-// server/api/login.post.ts (REVERTIDO PARA VERIFICAÇÃO SIMPLES)
-import sql from '~/server/database' 
+import jwt from 'jsonwebtoken' // <--- Importante
+import postgres from 'postgres'
 import { defineEventHandler, readBody, setCookie, createError } from 'h3'
-import jwt from 'jsonwebtoken' 
 
-// Variável de segredo (mantida para JWT)
-const EXPLICIT_SECRET = 'minha_chave_secreta_super_segura_12345'; 
+const sql = postgres(process.env.DATABASE_URL as string)
+
+// ESTA É A CHAVE MESTRA. 
+// Dica: No mundo real, coloque isso no .env (ex: process.env.JWT_SECRET)
+const EXPLICIT_SECRET = 'minha_chave_secreta_para_teste_2025_42'; 
 
 export default defineEventHandler(async (event) => {
     const body = await readBody(event)
-    const { email, senha } = body // Senha em texto plano
 
-    try {
-        // 1. AUTENTICAÇÃO SIMPLES (SQL)
-        const usuarios = await sql`
-            SELECT id, empresa_id, nome FROM usuarios 
-            WHERE email = ${email} 
-            AND senha = ${senha} -- <-- VOLTA AO SEU MÉTODO ORIGINAL
-        `
-        
-        if (usuarios.length === 0) {
-            // Se o bcrypt estava ativado e as senhas eram hash, esta é a linha que falhava.
-            throw createError({ statusCode: 401, message: 'Email ou senha inválidos' })
-        }
+    // 1. Verifica usuário no banco (Exemplo simplificado)
+    const usuarios = await sql`
+        SELECT * FROM usuarios WHERE email = ${body.email} AND senha = ${body.senha}
+    `
+    const usuario = usuarios[0]
 
-        const usuario = usuarios[0]
-        
-        // 2. CRIAR O TOKEN JWT (Continua correto)
-        const payload = { id: usuario.id, empresa_id: usuario.empresa_id }
-        
-        const token = jwt.sign(payload, EXPLICIT_SECRET, { 
-            expiresIn: '2h' 
-        })
-
-        // 3. Define o cookie de sessão com o TOKEN JWT
-       setCookie(event, 'usuario_sessao', token, {
-    httpOnly: false, // <<--- CORREÇÃO TEMPORÁRIA: Permite que o JS do cliente leia o cookie
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 60 * 60 * 2 // 2 horas (em segundos)
-});
-
-        return { sucesso: true, usuario }
-
-    } catch (erro) {
-        if (erro.statusCode === 401) {
-             throw erro;
-        }
-        console.error('🔥 ERRO CRÍTICO NO LOGIN:', erro)
-        // Lança o 500 se o servidor travar por outro motivo
-        throw createError({ statusCode: 500, message: 'Erro interno no servidor' })
+    if (!usuario) {
+        throw createError({ statusCode: 401, message: 'Email ou senha incorretos' })
     }
+
+    // 2. CRIA O TOKEN (ASSINATURA)
+    // Aqui garantimos que o token é gerado com a NOSSA chave secreta
+    const token = jwt.sign(
+        { 
+            id: usuario.id, 
+            email: usuario.email, 
+            empresa_id: usuario.empresa_id // Dados que você quer ler depois
+        }, 
+        EXPLICIT_SECRET, 
+        { expiresIn: '7d' } // Validade
+    );
+
+    // 3. Salva no Cookie
+    setCookie(event, 'usuario_sessao', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 60 * 24 * 7 // 7 dias
+    })
+
+    return { success: true, user: usuario }
 })

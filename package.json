@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "@nuxtjs/tailwindcss": "^6.12.1",
+    "@types/jsonwebtoken": "^9.0.10",
     "autoprefixer": "^10.4.22",
     "nuxt": "^3.12.0",
     "postcss": "^8.5.6",
