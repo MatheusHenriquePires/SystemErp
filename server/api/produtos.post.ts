@@ -69,13 +69,10 @@ export default defineEventHandler(async (event) => {
         }
 
     } catch (error: any) {
-        console.error("Erro ao criar produto:", error)
-        
-        // Tratamento para evitar duplicidade (se houver restrição no banco)
-        if (error.code === '23505') { 
-             throw createError({ statusCode: 409, message: 'Produto já cadastrado.' })
-        }
-        
-        throw createError({ statusCode: 500, message: 'Erro interno ao salvar produto.' })
+        // Isso vai mandar o erro exato do banco para o seu navegador
+        throw createError({ 
+            statusCode: 500, 
+            message: `ERRO DE BANCO: ${error.message}` 
+        })
     }
 })
