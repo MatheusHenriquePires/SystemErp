@@ -1,4 +1,4 @@
-// server/api/pedidos/[id].ts (Visualização Unificada de Pedido - FINAL)
+// server/api/pedidos/[id].ts (Visualização Unificada de Pedido - CORREÇÃO DEFINITIVA)
 import sql from '~/server/database'
 import { defineEventHandler, getRouterParam, createError, getCookie } from 'h3'
 import jwt from 'jsonwebtoken'
@@ -17,6 +17,7 @@ function lerToken(token: string) {
 }
 
 export default defineEventHandler(async (event) => {
+    // 1. SEGURANÇA
     const cookie = getCookie(event, 'usuario_sessao')
     if (!cookie) throw createError({ statusCode: 401, message: 'Login necessário' })
 
@@ -33,7 +34,7 @@ export default defineEventHandler(async (event) => {
         const [dados] = await sql`
             SELECT
                 p.id, p.data_criacao as quote_date, p.valor_total as total_amount, p.payment_terms, p.status, p.cliente_nome,
-                p.markup_percent, p.final_total, -- COLUNAS DE MARKUP
+                p.markup_percent, p.final_total, 
                 e.nome as empresa_nome
             FROM pedidos p
             LEFT JOIN empresas e ON p.empresa_id = e.id
@@ -42,15 +43,15 @@ export default defineEventHandler(async (event) => {
 
         if (!dados) throw createError({ statusCode: 404, message: 'Pedido não encontrado.' })
 
-        // 4. Pega os Itens - [CHECA SE O BANCO TEM ESTAS COLUNAS]
+        // 4. Pega os Itens - [CORREÇÃO FINAL: INCLUÍDO COMODO NO SELECT]
         const itens = await sql`
             SELECT
-                nome_produto AS name, quantidade AS quantity, preco_unitario AS unit_price, total_preco AS total_price, comodo -- INCLUÍDO COMODO
+                nome_produto AS name, quantidade AS quantity, preco_unitario AS unit_price, total_preco AS total_price, comodo
             FROM itens_pedido
             WHERE pedido_id = ${id}
         `
 
-        // 5. Retorna o objeto plano para o frontend (com itens e colunas de markup na raiz)
+        // 5. Retorna
         return {
             ...dados,
             itens: itens
