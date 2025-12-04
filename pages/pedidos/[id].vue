@@ -27,10 +27,10 @@
 
        <div class="hidden print:flex justify-between items-center mb-8 border-b-2 border-gray-800 pb-6">
             <div class="flex items-center gap-4">
-                <img src="/logo.png" alt="Logo" class="h-20 w-auto object-contain" onerror="this.style.display='none'"/>
+                <img src="\logo1.jpeg" alt="Logo" class="h-20 w-auto object-contain" onerror="this.style.display='none'"/>
                 
                 <div class="text-left">
-                    <h1 class="text-2xl font-black text-gray-900 uppercase">NOME DA SUA EMPRESA</h1>
+                    <h1 class="text-2xl font-black text-gray-900 uppercase">Arbóreo</h1>
                 </div>
             </div>
             <div class="text-right self-end">

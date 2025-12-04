@@ -149,7 +149,7 @@ const filtroAtual = ref('TODOS');
 // ✅ CORREÇÃO: Usar chaves em MAIÚSCULO para padronizar com o banco
 const abas = [
   { key: 'TODOS', label: 'Todos' },
-  { key: 'ORCAMENTO', label: '📝 Orçamentos' }, 
+  { key: 'Orçamento', label: '📝 Orçamento' }, // Tentei mudar para 'Orçamento' (com Ç e O maiúsculo apenas)
   { key: 'PROPOSTA', label: '📢 Propostas' },
   { key: 'VENDA', label: '📦 Vendas' },
   { key: 'PAGO', label: '✅ Finalizados' }
