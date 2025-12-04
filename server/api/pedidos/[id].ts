@@ -44,10 +44,10 @@ export default defineEventHandler(async (event) => {
         if (!dados) throw createError({ statusCode: 404, message: 'Pedido não encontrado.' })
 
         // 4. Pega os Itens - [CORREÇÃO FINAL: INCLUÍDO COMODO NO SELECT]
-        const itens = await sql`
+       const itens = await sql`
             SELECT
                 nome_produto AS name, quantidade AS quantity, preco_unitario AS unit_price, total_preco AS total_price, comodo
-            FROM itens_pedido
+            FROM pedidos_itens -- <--- PROVAVEL CORREÇÃO: Usando 'pedidos_itens' em vez de 'itens_pedido'
             WHERE pedido_id = ${id}
         `
 
