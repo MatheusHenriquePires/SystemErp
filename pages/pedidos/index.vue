@@ -36,74 +36,92 @@
                 <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Ações</th>
               </tr>
             </thead>
+
             <tbody class="bg-white divide-y divide-gray-200">
               <tr v-if="loading">
                 <td colspan="6" class="p-8 text-center text-gray-500">Carregando...</td>
               </tr>
+
               <tr v-else-if="pedidos.length === 0">
                 <td colspan="6" class="p-8 text-center text-gray-500">Nenhum pedido encontrado nesta categoria.</td>
               </tr>
               
               <tr v-for="pedido in pedidos" :key="pedido.id" class="hover:bg-gray-50 transition">
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">#{{ pedido.id }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ pedido.cliente_nome }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td class="px-6 py-4 text-sm font-bold text-gray-900">#{{ pedido.id }}</td>
+                <td class="px-6 py-4 text-sm text-gray-600">{{ pedido.cliente_nome }}</td>
+                <td class="px-6 py-4 text-sm text-gray-500">
                   {{ new Date(pedido.data_criacao).toLocaleDateString('pt-BR') }}
                 </td>
                 
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right">
-                  {{ formatarMoeda(pedido.total) }}
+                <!-- TOTAL -->
+                <td class="px-6 py-4 text-sm font-bold text-gray-900 text-right">
+                  {{
+                    pedido.status === 'VENDA' || pedido.status === 'PAGO'
+                      ? formatarMoeda(pedido.final_total)
+                      : formatarMoeda(pedido.total)
+                  }}
                 </td>
-                
-                <td class="px-6 py-4 whitespace-nowrap text-center">
+
+                <!-- STATUS -->
+                <td class="px-6 py-4 text-center">
                   <span :class="[
-                    'px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full',
+                    'px-2 py-1 text-xs font-semibold rounded-full',
                     classesStatus[pedido.status] || 'bg-gray-100 text-gray-800'
                   ]">
                     {{ pedido.status }}
                   </span>
                 </td>
 
-                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                <!-- AÇÕES -->
+                <td class="px-6 py-4 text-center text-sm">
                   <div class="flex justify-center space-x-2">
 
                     <button 
-                        v-if="pedido.status === 'ORCAMENTO'" 
-                        @click="atualizarStatus(pedido.id, 'PROPOSTA')"
-                        class="text-white bg-purple-600 hover:bg-purple-700 px-3 py-1 rounded shadow-sm transition text-xs"
-                        title="Gerar Proposta e Enviar ao Cliente"
+                      v-if="pedido.status === 'ORCAMENTO'" 
+                      @click="atualizarStatus(pedido.id, 'PROPOSTA')"
+                      class="text-white bg-purple-600 hover:bg-purple-700 px-3 py-1 rounded text-xs"
                     >
-                        ➡️ Gerar Proposta
+                      ➡️ Gerar Proposta
                     </button>
 
                     <NuxtLink
-                        v-if="pedido.status === 'PROPOSTA'" 
-                        :to="`/propostas/${pedido.id}`"
-                        target="_blank"
-                        class="text-white bg-indigo-500 hover:bg-indigo-600 px-3 py-1 rounded shadow-sm transition text-xs"
-                        title="Visualizar Documento da Proposta"
+                      v-if="pedido.status === 'PROPOSTA'" 
+                      :to="`/propostas/${pedido.id}`"
+                      target="_blank"
+                      class="text-white bg-indigo-500 hover:bg-indigo-600 px-3 py-1 rounded text-xs"
                     >
-                        📄 Proposta
+                      📄 Proposta
                     </NuxtLink>
 
-                    <button v-if="pedido.status === 'PROPOSTA' || pedido.status === 'PENDENTE'" 
-                        @click="atualizarStatus(pedido.id, 'VENDA')"
-                        class="text-white bg-green-500 hover:bg-green-600 px-3 py-1 rounded shadow-sm transition text-xs"
-                        title="Aprovar e Virar Venda"
+                    <button 
+                      v-if="pedido.status === 'PROPOSTA' || pedido.status === 'PENDENTE'" 
+                      @click="atualizarStatus(pedido.id, 'VENDA')"
+                      class="text-white bg-green-500 hover:bg-green-600 px-3 py-1 rounded text-xs"
                     >
-                        ✅ Aprovar
+                      ✅ Aprovar
                     </button>
 
-                    <button v-if="pedido.status === 'VENDA'" 
-                        @click="atualizarStatus(pedido.id, 'PAGO')"
-                        class="text-white bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded shadow-sm transition text-xs"
-                        title="Lançar no Caixa"
+                    <button 
+                      v-if="pedido.status === 'VENDA'" 
+                      @click="atualizarStatus(pedido.id, 'PAGO')"
+                      class="text-white bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded text-xs"
                     >
-                        💰 Receber
+                      💰 Receber
                     </button>
+
+                    <!-- ✅ BOTÃO DE IMPRIMIR PARA VENDA E PAGO -->
+                    <button 
+                      v-if="pedido.status === 'VENDA' || pedido.status === 'PAGO'" 
+                      @click="abrirImpressao(pedido.id)"
+                      class="text-white bg-gray-700 hover:bg-gray-800 px-3 py-1 rounded text-xs"
+                    >
+                      🖨️ Imprimir
+                    </button>
+
                   </div>
                 </td>
               </tr>
+
             </tbody>
           </table>
         </div>
@@ -115,89 +133,56 @@
 <script setup lang="ts">
 import DashboardLayout from '~/layouts/DashboardLayout.vue';
 
-// Estado
 const pedidos = ref([]);
 const loading = ref(true);
 const filtroAtual = ref('TODOS');
 
-// [ALTERAÇÃO 3]: ADICIONANDO A NOVA ABA 'PROPOSTA'
 const abas = [
   { key: 'TODOS', label: 'Todos' },
   { key: 'ORCAMENTO', label: '📝 Orçamentos' },
-  { key: 'PROPOSTA', label: '📢 Propostas Enviadas' }, // NOVO!
+  { key: 'PROPOSTA', label: '📢 Propostas Enviadas' },
   { key: 'VENDA', label: '📦 Vendas Abertas' },
   { key: 'PAGO', label: '✅ Finalizados' }
 ];
 
-// [ALTERAÇÃO 4]: NOVA COR PARA O STATUS PROPOSTA
 const classesStatus: Record<string, string> = {
   'ORCAMENTO': 'bg-yellow-100 text-yellow-800',
-  'PROPOSTA': 'bg-indigo-100 text-indigo-800', // NOVO!
+  'PROPOSTA': 'bg-indigo-100 text-indigo-800',
   'VENDA': 'bg-blue-100 text-blue-800',
   'PAGO': 'bg-green-100 text-green-800',
   'PENDENTE': 'bg-gray-100 text-gray-800'
 };
 
-// ... restante das funções (carregarPedidos, mudarAba, atualizarStatus, etc. permanecem as mesmas)
-
-// Buscar Pedidos
 const carregarPedidos = async () => {
   loading.value = true;
   try {
     const data = await $fetch(`/api/pedidos?status=${filtroAtual.value}`);
     pedidos.value = data || [];
-  } catch (e) {
-    console.error(e);
-    alert('Erro ao carregar pedidos');
   } finally {
     loading.value = false;
   }
 };
 
-// Mudar Aba
 const mudarAba = (novoStatus: string) => {
   filtroAtual.value = novoStatus;
   carregarPedidos();
 };
 
-// Atualizar Status (PUT)
 const atualizarStatus = async (id: number, novoStatus: string) => {
-  let acao = '';
-  if (novoStatus === 'PROPOSTA') acao = 'Gerar Proposta';
-  else if (novoStatus === 'VENDA') acao = 'Aprovar Orçamento';
-  else acao = 'Confirmar Recebimento';
-  
-  if (!confirm(`Tem certeza que deseja ${acao}?`)) return;
-
-  try {
-    await $fetch('/api/pedidos', {
-      method: 'PUT',
-      body: { 
-        id: id, 
-        status: novoStatus 
-      }
-    });
-    
-    await carregarPedidos();
-    alert('Status atualizado com sucesso!');
-    
-  } catch (e) {
-    console.error(e);
-    alert('Erro ao atualizar status.');
-  }
+  await $fetch('/api/pedidos', {
+    method: 'PUT',
+    body: { id, status: novoStatus }
+  });
+  await carregarPedidos();
 };
 
-// Função de Imprimir
 const abrirImpressao = (id: number) => {
   window.open(`/pedidos/imprimir/${id}`, '_blank');
 };
 
-const formatarMoeda = (val: number) => 
+const formatarMoeda = (val: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(val));
 
-onMounted(() => {
-  carregarPedidos();
-});
-
+onMounted(carregarPedidos);
 useHead({ title: 'Gestão de Pedidos' });
 </script>
