@@ -47,5 +47,6 @@ export default defineEventHandler(async (event) => {
     } catch (error: any) {
         console.error("ERRO FATAL NA ATUALIZAÇÃO SQL:", error.message);
         throw createError({ statusCode: 500, message: `Erro de Servidor: Falha ao salvar no DB.` })
+        
     }
 })
