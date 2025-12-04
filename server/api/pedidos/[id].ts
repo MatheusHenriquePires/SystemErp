@@ -1,4 +1,4 @@
-// server/api/pedidos/[id].ts (FINAL: Corrigindo a ordem da query)
+// server/api/pedidos/[id].ts (Busca de Detalhes do Pedido - Final Definitivo)
 import sql from '~/server/database'
 import { defineEventHandler, getRouterParam, createError, getCookie } from 'h3'
 import jwt from 'jsonwebtoken'
@@ -30,21 +30,27 @@ export default defineEventHandler(async (event) => {
     if (!id) throw createError({ statusCode: 400, message: 'ID do pedido é obrigatório.' });
 
     try {
-        // ... (Busca do Cabeçalho mantida)
+        // 3. Pega o Cabeçalho
+        const [dados] = await sql`
+            SELECT
+                p.id, p.data_criacao as data_criacao, p.valor_total as total_amount, p.payment_terms, p.status, p.cliente_nome,
+                p.markup_percent, p.final_total, 
+                e.nome as empresa_nome
+            FROM pedidos p
+            LEFT JOIN empresas e ON p.empresa_id = e.id
+            WHERE p.id = ${id} AND p.empresa_id = ${usuario.empresa_id}
+        `
 
-        // 4. Pega os Itens - [ULTIMA TENTATIVA: MUDANDO ORDEM E ADICIONANDO ALIAS PARA COMODO]
+        if (!dados) throw createError({ statusCode: 404, message: 'Pedido não encontrado.' })
+
+        // 4. Pega os Itens - [FINAL FIX: FORÇANDO ALIAS EXCLUSIVO]
         const itens = await sql`
             SELECT
-                descricao, 
-                quantidade, 
-                preco_unitario, 
-                comodo AS room_name, -- NOVO ALIAS E ORDEM ALTERADA
-                total_preco AS total_price_item -- Total do item com alias
-            FROM pedidos_itens
+                descricao, quantidade, preco_unitario, total_preco, comodo AS room_name -- NOVO ALIAS PARA O FRONTEND
+            FROM pedidos_itens -- A tabela correta
             WHERE pedido_id = ${id}
         `
 
-        // 5. Retorna
         return {
             ...dados,
             itens: itens
