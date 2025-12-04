@@ -1,15 +1,19 @@
-// server/api/pedidos/[id].ts (AGORA COM PRISMA)
-import prisma from '~/server/utils/prisma' // Importa a instância do Prisma
+// server/api/pedidos/[id].ts (Busca de Detalhes do Pedido - Final)
+import sql from '~/server/database'
 import { defineEventHandler, getRouterParam, createError, getCookie } from 'h3'
 import jwt from 'jsonwebtoken'
 
 function lerToken(token: string) {
     if (!token) return null;
-    const base64Url = token.split('.')[1];
-    if (!base64Url) return null;
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const buffer = Buffer.from(base64, 'base64');
-    return JSON.parse(buffer.toString('utf-8'));
+    try {
+        const base64Url = token.split('.')[1];
+        if (!base64Url) return null;
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const buffer = Buffer.from(base64, 'base64');
+        return JSON.parse(buffer.toString('utf-8'));
+    } catch (e) {
+        return null;
+    }
 }
 
 export default defineEventHandler(async (event) => {
@@ -23,60 +27,43 @@ export default defineEventHandler(async (event) => {
     }
 
     const id = getRouterParam(event, 'id')
-    const pedidoId = parseInt(id as string, 10);
-    if (isNaN(pedidoId)) throw createError({ statusCode: 400, message: 'ID inválido.' });
+    if (!id) throw createError({ statusCode: 400, message: 'ID do pedido é obrigatório.' });
 
     try {
-        // 2. BUSCA DO PEDIDO E ITENS (UMA ÚNICA QUERY PRISMA)
-        const pedidoComItens = await prisma.pedidos.findUnique({
-            where: {
-                id: pedidoId,
-                empresa_id: usuario.empresa_id 
-            },
-            include: {
-                // PRISMA GARANTE QUE O CAMPO comodo SERÁ MAPEADO CORRETAMENTE
-                itens: {
-                    select: {
-                        id: true,
-                        descricao: true,
-                        quantidade: true,
-                        preco_unitario: true,
-                        total_preco: true,
-                        comodo: true, // Prisma garante este mapeamento
-                    }
-                }
-            }
-        });
+        // 3. Pega o Cabeçalho
+        const [dados] = await sql`
+            SELECT
+                p.id, p.data_criacao as data_criacao, p.valor_total as total_amount, p.payment_terms, p.status, p.cliente_nome,
+                p.markup_percent, p.final_total, 
+                e.nome as empresa_nome
+            FROM pedidos p
+            LEFT JOIN empresas e ON p.empresa_id = e.id
+            WHERE p.id = ${id} AND p.empresa_id = ${usuario.empresa_id}
+        `
 
-        if (!pedidoComItens) throw createError({ statusCode: 404, message: 'Pedido não encontrado.' })
+        if (!dados) throw createError({ statusCode: 404, message: 'Pedido não encontrado.' })
 
-        // 3. Formatação da Resposta (Adaptando o Prisma Output para o Frontend)
-        const { itens, ...dadosPedido } = pedidoComItens;
+        // 4. Pega os Itens - [SELECT FINAL E CORRETO]
+        const itens = await sql`
+            SELECT
+                comodo, -- PRIMEIRO NA LISTA (PARA EVITAR PROBLEMAS DE DRIVER)
+                descricao, 
+                quantidade, 
+                preco_unitario, 
+                total_preco
+            FROM pedidos_itens
+            WHERE pedido_id = ${id}
+        `
 
-        // Formata os itens para o formato esperado pelo Frontend
-        const itensFormatados = itens.map(item => ({
-            ...item,
-            // Mantendo os nomes de colunas que o Frontend espera
-            name: item.descricao,
-            quantity: item.quantidade,
-            unit_price: item.preco_unitario,
-            // A coluna 'comodo' agora virá corretamente mapeada
-        }));
-
-
-        // 4. Retorna
+        // 5. Retorna
         return {
-            ...dadosPedido,
-            itens: itensFormatados
+            ...dados,
+            itens: itens
         }
 
     } catch (e: any) {
-        console.error("Erro ao buscar detalhes do pedido com Prisma:", e);
-        // O Prisma geralmente lança erros com a propriedade message
-        throw createError({ statusCode: 500, message: `Erro no banco de dados: ${e.message}` })
-    } finally {
-        // Nota: Em ambientes serverless ou Nuxt Nitro, a desconexão é opcional, 
-        // mas é boa prática em conexões de curta duração.
-        // await prisma.$disconnect(); 
+        console.error("Erro ao buscar detalhes do pedido:", e);
+        if (e.statusCode === 404) throw e;
+        throw createError({ statusCode: 500, message: 'Erro interno ao buscar dados do pedido.' })
     }
 })

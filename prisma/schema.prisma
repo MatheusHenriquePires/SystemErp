@@ -8,7 +8,7 @@ generator client {
 // Define o provedor do banco de dados
 datasource db {
   provider = "postgresql"
-  // [CORREÇÃO]: A linha 'url' é removida para que o CLI leia o prisma.config.ts
+  url      = env("DATABASE_URL")
 }
 
 // --- Definição dos Modelos ---
