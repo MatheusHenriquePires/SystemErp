@@ -25,19 +25,16 @@
       
       <div v-else class="space-y-6 text-slate-800">
 
-        <div class="hidden print:flex justify-between items-center mb-8 border-b-2 border-gray-800 pb-6">
+       <div class="hidden print:flex justify-between items-center mb-8 border-b-2 border-gray-800 pb-6">
             <div class="flex items-center gap-4">
                 <img src="/logo.png" alt="Logo" class="h-20 w-auto object-contain" onerror="this.style.display='none'"/>
                 
                 <div class="text-left">
-                    <h1 class="text-2xl font-black text-gray-900 uppercase">Sua Empresa Aqui</h1>
-                    <p class="text-sm text-gray-600">CNPJ: 00.000.000/0001-00</p>
-                    <p class="text-sm text-gray-600">contato@suaempresa.com.br</p>
-                    <p class="text-sm text-gray-600">(86) 9999-9999</p>
+                    <h1 class="text-2xl font-black text-gray-900 uppercase">NOME DA SUA EMPRESA</h1>
                 </div>
             </div>
             <div class="text-right self-end">
-                <p class="text-xs text-gray-400 uppercase font-bold">Documento Auxiliar</p>
+                <p class="text-xs text-gray-400 uppercase font-bold">Orçamento Nº {{ data.id }}</p>
                 <p class="text-sm font-medium text-gray-600">Emitido em {{ formatarData(new Date().toISOString()) }}</p>
             </div>
         </div>
