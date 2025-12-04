@@ -1,4 +1,3 @@
-// server/api/pedidos.post.ts (FINAL: Com Injeção de Nome)
 import jwt from 'jsonwebtoken'
 import postgres from 'postgres'
 import { defineEventHandler, getCookie, readBody, createError } from 'h3'
@@ -47,11 +46,11 @@ export default defineEventHandler(async (event) => {
         // 2. Inserir os Itens, Lendo a nova estrutura de Cômodos
         if (body.comodos && body.comodos.length > 0) {
             for (const comodo of body.comodos) {
-                let isFirstItem = true; // Flag para o primeiro item
+                let isFirstItem = true; 
                 for (const item of comodo.produtos) {
                     let descricaoFinal = item.descricao || 'Item sem nome';
                     
-                    // [CORREÇÃO FINAL]: Injeta o nome do cômodo na descrição do PRIMEIRO item
+                    // [WORKAROUND]: Injeta o nome do cômodo na descrição do PRIMEIRO item
                     if (isFirstItem) {
                         descricaoFinal = `[${comodo.comodo}] ${descricaoFinal}`;
                         isFirstItem = false;
@@ -62,7 +61,7 @@ export default defineEventHandler(async (event) => {
                             pedido_id, descricao, quantidade, preco_unitario, comodo
                         ) VALUES (
                             ${pedidoId}, 
-                            ${descricaoFinal}, -- AQUI VAI O NOME INJETADO
+                            ${descricaoFinal}, 
                             ${item.quantidade || 1}, 
                             ${item.preco_unitario || 0},
                             ${comodo.comodo}

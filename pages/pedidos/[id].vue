@@ -2,6 +2,24 @@
   <NuxtLayout>
     <div class="max-w-4xl mx-auto my-8 p-8 bg-white shadow-xl print:shadow-none print:m-0 print:p-0">
       
+      <div class="mb-6 flex justify-between items-center print:hidden">
+        <NuxtLink to="/pedidos" class="text-gray-600 hover:text-blue-600">
+          &larr; Voltar para Pedidos
+        </NuxtLink>
+        <div class="flex space-x-2">
+            <button 
+                @click="applyMarkup" 
+                :disabled="savingMarkup"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold shadow-md transition disabled:opacity-50"
+            >
+                {{ savingMarkup ? 'Salvando Fator...' : 'Salvar Fator' }}
+            </button>
+            <button @click="printProposal" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-bold shadow-md transition">
+                🖨️ Imprimir / Salvar PDF
+            </button>
+        </div>
+      </div>
+
       <div v-if="loading" class="text-center py-20">
         Carregando Proposta...
       </div>
@@ -25,15 +43,16 @@
         </header>
 
         <section class="p-4 border rounded-lg bg-yellow-50 mb-6 flex justify-between items-center print:hidden">
-            <h2 class="text-lg font-semibold text-yellow-800"> Markup Adicional</h2>
+            <h2 class="text-lg font-semibold text-yellow-800"> Fator Multiplicador</h2>
             <div class="flex items-center space-x-2">
                 <input 
                     type="number" 
-                    v-model.number="markupPercent" 
+                    v-model.number="fatorMultiplicador" 
                     step="0.01"
+                    min="1.0" 
                     class="w-20 text-center rounded-md border-yellow-300 focus:border-yellow-500"
                 />
-                <span class="text-xl font-bold text-yellow-800">%</span>
+                <span class="text-xl font-bold text-yellow-800">x</span>
             </div>
         </section>
 
@@ -47,7 +66,7 @@
 
                 <ul class="space-y-2 text-sm text-gray-700">
                     <li v-for="(item, index) in grupo.itens" :key="index" class="flex justify-between border-b border-dashed pb-1">
-                        <span class="w-3/5">{{ item.descricao }} ({{ item.quantidade }}x)</span> 
+                        <span class="w-3/5">{{ limparDescricao(item.descricao) }} ({{ item.quantidade }}x)</span> 
                         <span class="font-medium">{{ formatarMoeda(Number(item.quantidade) * Number(item.preco_unitario)) }}</span>
                     </li>
                 </ul>
@@ -58,7 +77,30 @@
             </div>
         </section>
 
-        </div>
+        <footer class="pt-6 border-t mt-6">
+          <div class="flex justify-end">
+            <div class="w-full md:w-1/2 space-y-2">
+
+              <div class="flex justify-between text-gray-700">
+                <span class="font-medium">Total Base dos Itens:</span>
+                <span class="font-medium">{{ formatarMoeda(totalBase) }}</span>
+              </div>
+
+              <div v-if="fatorMultiplicador > 1" class="flex justify-between text-yellow-700 font-bold pt-1 border-t border-yellow-100">
+                <span class="text-sm">Acréscimo de Markup:</span>
+                <span class="text-sm">+ {{ formatarMoeda(totalMarkupAcrescido) }} ({{ ((fatorMultiplicador - 1) * 100).toFixed(2) }}%)</span>
+              </div>
+              
+              <div class="flex justify-between text-xl font-extrabold pt-4 border-t-2 border-blue-100">
+                <span class="text-blue-800">TOTAL FINAL:</span>
+                <span :class="{'text-red-600': totalFinal > totalBase}">{{ formatarMoeda(totalFinal) }}</span>
+              </div>
+
+            </div>
+          </div>
+        </footer>
+
+      </div>
     </div>
   </NuxtLayout>
 </template>
@@ -70,16 +112,29 @@ const loading = ref(true);
 const error = ref<any>(null);
 const savingMarkup = ref(false);
 
-const markupPercent = ref(0); 
+const fatorMultiplicador = ref(1.0); // NOVO ESTADO
+
+// [FUNÇÃO NOVA]: Extrai o nome do cômodo da descrição
+const extractComodo = (description: string): string | null => {
+    // Procura pelo prefixo entre colchetes, ex: [Cozinha Planejada]
+    const match = description.match(/^\[(.*?)\]/);
+    return match ? match[1].trim() : null;
+};
+
+// [FUNÇÃO NOVA]: Limpa a descrição para exibição (remove o prefixo)
+const limparDescricao = (description: string): string => {
+    // Remove o prefixo [Nome do Cômodo] e qualquer espaço em branco subsequente
+    return description.replace(/^\[.*?\]\s*/, '').trim();
+};
+
 
 // Propriedades Computadas (Logic)
-
 const itensAgrupados = computed(() => {
     if (!data.value || !data.value.itens) return {};
 
     return data.value.itens.reduce((groups, item) => {
-        // [LEITURA CORRIGIDA]: Lê o novo alias comodo_name
-        const comodoName = String(item.comodo_name || '').trim() || 'Geral'; 
+        // [LEITURA FINAL]: Tenta extrair o nome do cômodo da descrição (o nosso workaround)
+        const comodoName = extractComodo(item.descricao || '') || 'Geral'; 
         
         if (!groups[comodoName]) {
             groups[comodoName] = { total: 0, itens: [] };
@@ -97,8 +152,6 @@ const itensAgrupados = computed(() => {
 });
 
 
-// ... (resto das funções computadas e actions mantidas) ...
-
 const totalBase = computed(() => {
     const baseFromData = parseFloat(data.value?.valor_total || data.value?.total || 0);
     if (baseFromData > 0) return baseFromData;
@@ -112,31 +165,45 @@ const totalBase = computed(() => {
 });
 
 const totalMarkupAcrescido = computed(() => {
-    return totalBase.value * (markupPercent.value / 100);
+    const fator = fatorMultiplicador.value > 0 ? fatorMultiplicador.value : 1.0;
+    return totalBase.value * (fator - 1); 
 });
+
 const totalFinal = computed(() => {
     const finalFromData = parseFloat(data.value?.final_total || 0);
     if (finalFromData > 0) return finalFromData;
 
-    return totalBase.value + totalMarkupAcrescido.value;
+    const fator = fatorMultiplicador.value > 0 ? fatorMultiplicador.value : 1.0;
+    return totalBase.value * fator;
 });
 
 
 const applyMarkup = async () => {
-    if (!confirm(`Confirma aplicar um acréscimo de ${markupPercent.value}% ao valor total?`)) return;
+    let fator = fatorMultiplicador.value;
+    if (!fator || isNaN(fator) || fator < 1.0) {
+        fator = 1.0;
+        fatorMultiplicador.value = 1.0; 
+    }
+    
+    const percentToSave = (fator - 1) * 100; 
+
+    if (!confirm(`Confirma aplicar o Fator Multiplicador de ${fator.toFixed(2)}x (Acréscimo de ${percentToSave.toFixed(2)}%)?`)) return;
     
     savingMarkup.value = true;
     try {
         const response = await $fetch(`/api/pedidos/${id}/markup`, {
             method: 'PATCH',
-            body: { markup_percent: markupPercent.value }
+            body: { 
+                markup_percent: percentToSave,
+                fator_multiplicador: fator 
+            }
         });
         
         data.value.final_total = response.updated.final_total;
-        alert('Markup salvo e total final atualizado!');
+        alert('Fator Multiplicador salvo e Total Final atualizado!');
 
     } catch (e: any) {
-        alert(`Erro ao salvar markup: ${e.message || 'Erro de servidor'}`);
+        alert(`Erro ao salvar Markup: ${e.message || 'Erro de servidor'}`);
     } finally {
         savingMarkup.value = false;
     }
@@ -148,7 +215,11 @@ const fetchData = async () => {
         data.value = response;
 
         if (data.value && data.value.markup_percent) {
-            markupPercent.value = parseFloat(data.value.markup_percent);
+            const percent = parseFloat(data.value.markup_percent);
+            const validPercent = isNaN(percent) ? 0 : percent;
+            fatorMultiplicador.value = 1 + (validPercent / 100); 
+        } else {
+            fatorMultiplicador.value = 1.0;
         }
     } catch (e: any) {
         error.value = e.data || e; 
@@ -156,6 +227,8 @@ const fetchData = async () => {
         loading.value = false;
     }
 };
+
+onMounted(fetchData);
 
 // Funções utilitárias (mantidas)
 function formatarMoeda(valor: number): string {
@@ -177,8 +250,6 @@ function printProposal(): void {
   window.print();
 }
 
-
-onMounted(fetchData);
 </script>
 
 <style scoped>

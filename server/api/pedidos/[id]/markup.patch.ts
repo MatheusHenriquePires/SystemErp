@@ -14,11 +14,10 @@ export default defineEventHandler(async (event) => {
     const id = getRouterParam(event, 'id')
     const body = await readBody(event)
     
-    // [CORREÇÃO]: Recebe ambos os campos (percentual para DB e fator para cálculo)
-    const percentToSave = parseFloat(body.markup_percent); // O percentual que o frontend calculou
-    const fatorMultiplicador = parseFloat(body.fator_multiplicador); // O fator que o usuário digitou
+    const percentToSave = parseFloat(body.markup_percent); 
+    const fatorMultiplicador = parseFloat(body.fator_multiplicador); 
 
-    // 2. Validação: Checa o ID e o FATOR MULTIPLICADOR (o valor crítico)
+    // 2. Validação: Checa o ID e o FATOR MULTIPLICADOR
     if (!id || !usuario || isNaN(fatorMultiplicador) || fatorMultiplicador < 1) {
         throw createError({ statusCode: 400, message: 'Dados incompletos ou Fator Multiplicador inválido (deve ser >= 1).' })
     }
@@ -44,8 +43,8 @@ export default defineEventHandler(async (event) => {
         const [updated] = await sql`
             UPDATE pedidos
             SET 
-                markup_percent = ${percentToSave}, /* Salva o percentual (Ex: 20) */
-                final_total = ${finalTotal}         /* Salva o total calculado com o fator */
+                markup_percent = ${percentToSave}, 
+                final_total = ${finalTotal}         
             WHERE id = ${id} AND empresa_id = ${usuario.empresa_id}
             RETURNING id, final_total, markup_percent
         `
