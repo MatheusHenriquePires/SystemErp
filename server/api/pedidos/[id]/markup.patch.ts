@@ -47,11 +47,11 @@ export default defineEventHandler(async (event) => {
     return { success: true, updated }
 
   } catch (error: any) {
-    console.error('ERRO REAL DO PATCH MARKUP:', error)
+  console.error('ERRO REAL DO PATCH MARKUP:', error)
 
-    throw createError({
-      statusCode: 500,
-      message: 'Erro interno ao salvar no banco'
-    })
-  }
+  throw createError({
+    statusCode: 500,
+    message: error.message || 'Erro interno ao salvar no banco'
+  })
+}
 })
