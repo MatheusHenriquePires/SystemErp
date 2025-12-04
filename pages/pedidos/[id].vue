@@ -179,11 +179,15 @@ const totalFinal = computed(() => {
 
 
 const applyMarkup = async () => {
-    let fator = fatorMultiplicador.value;
-    if (!fator || isNaN(fator) || fator < 1.0) {
+    // 1. Força a conversão para float e garante o valor mínimo de 1.0
+    // O parseFloat(fatorMultiplicador.value || 1.0) garante que se for null/vazio/NaN, ele usa 1.0.
+    let fator = parseFloat(fatorMultiplicador.value) || 1.0; 
+    
+    // 2. Garante que o valor no input é pelo menos 1.0 para manter a UI consistente
+    if (fator < 1.0) {
         fator = 1.0;
-        fatorMultiplicador.value = 1.0; 
     }
+    fatorMultiplicador.value = fator;
     
     const percentToSave = (fator - 1) * 100; 
 
@@ -191,16 +195,17 @@ const applyMarkup = async () => {
     
     savingMarkup.value = true;
     try {
+        // 3. Envia o valor corrigido
         const response = await $fetch(`/api/pedidos/${id}/markup`, {
             method: 'PATCH',
             body: { 
                 markup_percent: percentToSave,
-                fator_multiplicador: fator 
+                fator_multiplicador: fator // Envia o valor corrigido
             }
         });
         
         data.value.final_total = response.updated.final_total;
-        alert('Fator Multiplicador salvo e Total Final atualizado!');
+        alert('Fator Multiplicador salvo e Total Final atualizado! ✅');
 
     } catch (e: any) {
         alert(`Erro ao salvar Markup: ${e.message || 'Erro de servidor'}`);

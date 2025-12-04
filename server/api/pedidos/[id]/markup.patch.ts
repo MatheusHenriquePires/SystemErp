@@ -6,10 +6,7 @@ const sql = postgres(process.env.DATABASE_URL as string)
 function lerToken(token: string) { /* ... (função mantida) ... */ }
 
 export default defineEventHandler(async (event) => {
-    // 1. Segurança e IDs
-    const cookie = getCookie(event, 'usuario_sessao')
-    if (!cookie) throw createError({ statusCode: 401, message: 'Login necessário' })
-    const usuario = lerToken(cookie)
+    // ... (segurança e ID)
 
     const id = getRouterParam(event, 'id')
     const body = await readBody(event)
@@ -17,7 +14,7 @@ export default defineEventHandler(async (event) => {
     const percentToSave = parseFloat(body.markup_percent); 
     const fatorMultiplicador = parseFloat(body.fator_multiplicador); 
 
-    // 2. Validação: Checa o ID e o FATOR MULTIPLICADOR
+    // A validação que precisa ser satisfeita:
     if (!id || !usuario || isNaN(fatorMultiplicador) || fatorMultiplicador < 1) {
         throw createError({ statusCode: 400, message: 'Dados incompletos ou Fator Multiplicador inválido (deve ser >= 1).' })
     }
