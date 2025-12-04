@@ -24,33 +24,26 @@
           <div>
             <h1 class="text-2xl font-extrabold text-gray-800">PROPOSTA #{{ id }}</h1>
             <p class="mt-1 text-sm text-gray-500">
-              Data: {{ formatarData(data.cabecalho.data_criacao) }}
-            </p>
+              Data: {{ formatarData(data.data_criacao) }} </p>
           </div>
           <div class="text-right">
-             <p class="font-bold text-lg text-gray-900">{{ data.cabecalho.empresa_nome || 'ARBOREO' }}</p>
-             <p class="text-sm text-gray-500">{{ data.cabecalho.cliente_cidade || 'Cidade não informada' }}</p>
-          </div>
+             <p class="font-bold text-lg text-gray-900">{{ data.cliente_nome || 'ARBOREO' }}</p> <p class="text-sm text-gray-500">{{ data.cliente_cidade || 'Cidade não informada' }}</p> </div>
         </header>
 
         <section class="mb-6 border-b pb-4">
           <h2 class="text-lg font-semibold mb-2">Cliente</h2>
           <div class="grid grid-cols-2 text-sm text-gray-700">
-            <div>Nome: <span class="font-medium">{{ data.cabecalho.cliente_nome }}</span></div>
-            <div>Telefone: <span class="font-medium">{{ data.cabecalho.cliente_telefone || 'N/A' }}</span></div>
-            <div>Email: <span class="font-medium">{{ data.cabecalho.cliente_email || 'N/A' }}</span></div>
-          </div>
+            <div>Nome: <span class="font-medium">{{ data.cliente_nome }}</span></div> <div>Telefone: <span class="font-medium">{{ data.cliente_telefone || 'N/A' }}</span></div> <div>Email: <span class="font-medium">{{ data.cliente_email || 'N/A' }}</span></div> </div>
         </section>
 
         <section>
           <h2 class="text-lg font-semibold mb-3">Itens Inclusos</h2>
           <div class="space-y-4">
-            <div v-for="(item, index) in data.itens" :key="index" class="p-4 border rounded-lg bg-gray-50">
-              <h3 class="font-bold text-lg text-gray-800">{{ item.nome_produto || item.name }}</h3>
-              <div class="text-sm text-gray-600 mt-1 space-y-1">
-                <p>Quantidade: {{ item.quantidade || item.quantity }}</p>
-                <p>Preço Unitário: {{ formatarMoeda(item.preco_unitario || item.unit_price) }}</p>
-                <p class="font-semibold text-gray-700">Subtotal: {{ formatarMoeda((item.quantidade || item.quantity) * (item.preco_unitario || item.unit_price)) }}</p>
+            <div v-for="(item, index) in data.itens" :key="index" class="p-4 border rounded-lg bg-gray-50"> 
+              <h3 class="font-bold text-lg text-gray-800">{{ item.descricao || item.name }}</h3> <div class="text-sm text-gray-600 mt-1 space-y-1">
+                <p>Quantidade: {{ item.quantidade }}</p> 
+                <p>Preço Unitário: {{ formatarMoeda(item.preco_unitario) }}</p>
+                <p class="font-semibold text-gray-700">Subtotal: {{ formatarMoeda(Number(item.quantidade) * Number(item.preco_unitario)) }}</p>
               </div>
             </div>
           </div>
@@ -61,18 +54,16 @@
             <div class="w-full md:w-1/2 space-y-2">
               <div class="flex justify-between text-gray-700">
                 <span class="font-medium">Total dos Itens:</span>
-                <span class="font-medium">{{ formatarMoeda(data.cabecalho.valor_total || data.cabecalho.total_amount) }}</span>
+                <span class="font-medium">{{ formatarMoeda(data.total) }}</span> 
               </div>
               
               <div class="flex justify-between text-base font-bold pt-2 border-t mt-2">
                 <span>Condições:</span>
-                <span class="text-blue-600">{{ data.cabecalho.payment_terms || 'À vista' }}</span>
-              </div>
+                <span class="text-blue-600">{{ data.payment_terms || 'À vista' }}</span> </div>
 
               <div class="flex justify-between text-xl font-extrabold text-blue-800 pt-4 border-t-2 border-blue-100">
                 <span>TOTAL FINAL:</span>
-                <span>{{ formatarMoeda(data.cabecalho.valor_total || data.cabecalho.total_amount) }}</span>
-              </div>
+                <span>{{ formatarMoeda(data.total) }}</span> </div>
             </div>
           </div>
         </footer>
@@ -84,11 +75,10 @@
 
 <script setup lang="ts">
 const id = useRoute().params.id;
-const data = ref<any>(null); // Continua como null
+const data = ref<any>(null);
 const loading = ref(true);
 const error = ref<any>(null);
 
-// Formatação
 const formatarMoeda = (valor: any) => {
     const numero = Number(valor);
     if (isNaN(numero)) return 'R$ 0,00';
@@ -104,20 +94,16 @@ const formatarData = (data: string) => {
     }
 }
 
-// Ação de Impressão
 const printProposal = () => {
   window.print();
 };
 
-// Fetch data
 const fetchData = async () => {
     try {
         const response = await $fetch(`/api/pedidos/${id}`); 
-        // Se a resposta for um objeto vazio, data.value será um objeto vazio. 
-        // Para evitar o crash, garantimos que seja null ou o objeto esperado.
-        data.value = response && response.cabecalho ? response : null; 
+        // Se o JSON for um objeto simples (não aninhado), salvamos ele.
+        data.value = response; 
     } catch (e: any) {
-        // Pega o erro para o v-else-if
         error.value = e.data || e; 
     } finally {
         loading.value = false;
@@ -127,14 +113,12 @@ const fetchData = async () => {
 onMounted(fetchData);
 
 useHead({ 
-    title: `Proposta #${id} - ${data.value?.cabecalho?.cliente_nome || 'Carregando...'}`,
+    title: `Proposta #${id} - ${data.value?.cliente_nome || 'Carregando...'}`,
 });
 </script>
 
 <style scoped>
-/* Estilos para impressão */
 @media print {
-  /* Oculta o botão de impressão na versão impressa */
   .print\:hidden {
     display: none !important;
   }
