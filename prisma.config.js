@@ -1,10 +1,13 @@
-// prisma.config.js (Versão Final Simples)
+// prisma.config.ts (Versão Limpa Final)
 
-module.exports = {
+// Removida a linha 'import { defineConfig } from...' para evitar o erro de módulo.
+
+// O CLI do Prisma deve ser capaz de inferir a estrutura da configuração
+export default {
   datasources: {
     db: {
       provider: 'postgresql',
-      // O CLI do Prisma lerá o DATABASE_URL do seu .env
+      // Lendo a variável de ambiente que está no seu .env
       url: process.env.DATABASE_URL, 
     },
   },
