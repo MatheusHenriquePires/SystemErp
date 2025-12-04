@@ -4,20 +4,15 @@
       
       <div class="mb-6 flex justify-between items-center print:hidden">
         <NuxtLink to="/pedidos" class="text-gray-600 hover:text-blue-600 flex items-center gap-1">
-          &larr; Voltar para Pedidos
+          &larr; Voltar
         </NuxtLink>
         <button @click="printProposal" class="bg-gray-800 hover:bg-black text-white px-4 py-2 rounded-lg font-bold shadow-md transition flex items-center gap-2">
-            🖨️ Imprimir / Gerar PDF
+            🖨️ Imprimir
         </button>
       </div>
 
-      <div v-if="loading" class="text-center py-20 text-gray-500">
-        Carregando proposta...
-      </div>
-
-      <div v-else-if="!data" class="text-center text-red-500 py-10">
-        Pedido não encontrado.
-      </div>
+      <div v-if="loading" class="text-center py-20 text-gray-500">Carregando...</div>
+      <div v-else-if="!data" class="text-center text-red-500 py-10">Pedido não encontrado.</div>
       
       <div v-else class="space-y-6 text-slate-800">
         
@@ -36,7 +31,7 @@
         <div v-for="(grupo, nomeComodo) in itensAgrupados" :key="nomeComodo" class="mb-8 break-inside-avoid">
             
             <h3 class="bg-gray-100 text-slate-800 p-2 font-bold text-lg border-l-4 border-slate-800 mb-2 uppercase tracking-wide flex justify-between">
-                <span>{{ nomeComodo }}</span>
+                <span>{{ nomeComodo === 'PADRAO' ? 'Itens do Pedido' : nomeComodo }}</span>
             </h3>
 
             <table class="w-full text-sm mb-2">
@@ -62,7 +57,12 @@
 
             <div class="flex justify-end border-t border-gray-300 pt-2">
                 <div class="text-right">
-                    <span class="text-xs text-gray-500 uppercase mr-2">Subtotal {{ nomeComodo }}:</span>
+                    <span v-if="nomeComodo !== 'PADRAO'" class="text-xs text-gray-500 uppercase mr-2">
+                        Subtotal {{ nomeComodo }}:
+                    </span>
+                    <span v-else class="text-xs text-gray-500 uppercase mr-2">
+                        Subtotal:
+                    </span>
                     <span class="font-bold text-slate-800">{{ formatarMoeda(grupo.subtotal) }}</span>
                 </div>
             </div>
@@ -71,19 +71,11 @@
         <footer class="mt-10 pt-6 border-t-2 border-slate-800 break-inside-avoid">
           <div class="flex justify-end">
             <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 min-w-[250px]">
-              <div class="flex justify-between items-center mb-1">
-                <span class="text-sm text-gray-600">Total de Itens</span>
-                <span class="font-medium">{{ totalQuantidadeItens }} un.</span>
-              </div>
               <div class="flex justify-between items-end mt-2 pt-2 border-t border-slate-200">
-                <span class="text-lg font-bold text-slate-900 uppercase">Total Geral</span>
+                <span class="text-lg font-bold text-slate-900 uppercase">Total Final</span>
                 <span class="text-2xl font-extrabold text-green-700">{{ formatarMoeda(totalGeral) }}</span>
               </div>
             </div>
-          </div>
-          
-          <div class="mt-12 text-center text-xs text-gray-400">
-            <p>Este orçamento tem validade de 10 dias.</p>
           </div>
         </footer>
 
@@ -99,24 +91,27 @@ const id = route.params.id;
 const data = ref<any>(null);
 const loading = ref(true);
 
-// --- CÁLCULOS E AGRUPAMENTO ---
-
+// ✅ LÓGICA DE AGRUPAMENTO CORRIGIDA
 const itensAgrupados = computed(() => {
     if (!data.value || !data.value.itens) return {};
 
-    // Reduz o array plano em um Objeto agrupado por cômodo
     return data.value.itens.reduce((acc: any, item: any) => {
-        // Se o item não tiver cômodo, chama de "Outros"
-        const comodo = item.comodo || 'Outros Ambientes';
+        // Se item.comodo for nulo (pedidos antigos), usa 'PADRAO' como chave interna
+        // Se item.comodo existir (pedidos novos), usa o nome do cômodo
+        let comodoKey = item.comodo;
+        
+        if (!comodoKey || comodoKey.trim() === '') {
+            comodoKey = 'PADRAO';
+        }
 
-        if (!acc[comodo]) {
-            acc[comodo] = { itens: [], subtotal: 0 };
+        if (!acc[comodoKey]) {
+            acc[comodoKey] = { itens: [], subtotal: 0 };
         }
 
         const totalItem = (Number(item.quantidade) || 0) * (Number(item.preco_unitario) || 0);
 
-        acc[comodo].itens.push(item);
-        acc[comodo].subtotal += totalItem;
+        acc[comodoKey].itens.push(item);
+        acc[comodoKey].subtotal += totalItem;
 
         return acc;
     }, {});
@@ -129,13 +124,6 @@ const totalGeral = computed(() => {
     }, 0);
 });
 
-const totalQuantidadeItens = computed(() => {
-    if (!data.value || !data.value.itens) return 0;
-    return data.value.itens.reduce((acc: number, item: any) => acc + (Number(item.quantidade) || 0), 0);
-});
-
-// --- FUNÇÕES UTILITÁRIAS ---
-
 function formatarMoeda(valor: any) {
     const num = Number(valor);
     if (isNaN(num)) return 'R$ 0,00';
@@ -144,19 +132,19 @@ function formatarMoeda(valor: any) {
 
 function formatarData(dataIso: string) {
     if (!dataIso) return '';
-    return new Date(dataIso).toLocaleDateString('pt-BR');
+    try { return new Date(dataIso).toLocaleDateString('pt-BR'); } catch { return dataIso; }
 }
 
 function printProposal() {
     window.print();
 }
 
-// --- CARREGAMENTO ---
-
 const fetchData = async () => {
     try {
         const response = await $fetch(`/api/pedidos/${id}`);
         data.value = response;
+        // Debug: Veja no console se os itens estão vindo com "comodo" preenchido
+        console.log("Itens do pedido:", data.value.itens);
     } catch (e) {
         console.error("Erro ao carregar pedido", e);
     } finally {
