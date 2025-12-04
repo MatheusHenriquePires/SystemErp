@@ -20,7 +20,7 @@
                             <select v-model.number="form.cliente_id" required 
                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
                                 
-                                <option disabled value="">
+                                <option disabled value="0">
                                     {{ loadingClientes ? 'Carregando clientes...' : 'Selecione um cliente...' }}
                                 </option>
                                 
@@ -65,11 +65,21 @@
                             </thead>
                             <tbody>
                                 <tr v-for="(produto, indexProduto) in comodo.produtos" :key="indexProduto">
-                                    <td class="p-2"><input v-model="produto.descricao" placeholder="MDF Branco TX, Parafuso..." required class="w-full text-sm border-b border-gray-300 bg-transparent focus:border-blue-500 outline-none" /></td>
-                                    <td class="p-2"><input v-model.number="produto.quantidade" type="number" step="1" min="1" required class="w-full text-sm text-center border-b border-gray-300 bg-transparent focus:border-blue-500 outline-none" /></td>
-                                    <td class="p-2"><input v-model.number="produto.preco_unitario" type="number" step="0.01" required class="w-full text-sm text-right border-b border-gray-300 bg-transparent focus:border-blue-500 outline-none" /></td>
-                                    <td class="p-2 text-right font-medium text-gray-700">{{ formatarMoeda(produto.quantidade * produto.preco_unitario) }}</td>
-                                    <td class="p-2"><button type="button" @click="removerProduto(indexComodo, indexProduto)" class="text-red-400 hover:text-red-600 font-bold">X</button></td>
+                                    <td class="p-2">
+                                        <input v-model="produto.descricao" placeholder="MDF Branco TX, Parafuso..." required class="w-full text-sm border-b border-gray-300 bg-transparent focus:border-blue-500 outline-none" />
+                                    </td>
+                                    <td class="p-2">
+                                        <input v-model.number="produto.quantidade" type="number" step="1" min="1" required class="w-full text-sm text-center border-b border-gray-300 bg-transparent focus:border-blue-500 outline-none" />
+                                    </td>
+                                    <td class="p-2">
+                                        <input v-model.number="produto.preco_unitario" type="number" step="0.01" required class="w-full text-sm text-right border-b border-gray-300 bg-transparent focus:border-blue-500 outline-none" />
+                                    </td>
+                                    <td class="p-2 text-right font-medium text-gray-700">
+                                        {{ formatarMoeda(produto.quantidade * produto.preco_unitario) }}
+                                    </td>
+                                    <td class="p-2">
+                                        <button type="button" @click="removerProduto(indexComodo, indexProduto)" class="text-red-400 hover:text-red-600 font-bold">X</button>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -145,7 +155,9 @@ const fetchClientes = async () => {
 };
 
 const formatarMoeda = (valor: number) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor || 0);
+    const numero = Number(valor);
+    if (isNaN(numero)) return 'R$ 0,00';
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(numero);
 };
 
 const calcularTotalComodo = (comodo: any) => {
