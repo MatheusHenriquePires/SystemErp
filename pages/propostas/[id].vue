@@ -47,12 +47,12 @@
             <div class="flex items-center space-x-2">
                 <input 
                     type="number" 
-                    v-model.number="fatorMultiplicador" /* NOVA VARIÁVEL */
+                    v-model.number="fatorMultiplicador" 
                     step="0.01"
-                    min="1.0"
+                    min="1.0" 
                     class="w-20 text-center rounded-md border-yellow-300 focus:border-yellow-500"
                 />
-                <span class="text-xl font-bold text-yellow-800">x</span> /* Novo indicador */
+                <span class="text-xl font-bold text-yellow-800">x</span>
             </div>
         </section>
 
@@ -112,18 +112,44 @@ const loading = ref(true);
 const error = ref<any>(null);
 const savingMarkup = ref(false);
 
-const fatorMultiplicador = ref(1.0); // NOVO ESTADO
+const fatorMultiplicador = ref(1.0); 
 
-// Funções utilitárias (mantidas)
-const extractComodo = (description: string): string | null => { /* ... */ };
-const limparDescricao = (description: string): string => { /* ... */ };
-// ... demais utilitárias
+// Funções utilitárias e lógica (mantida)
+
+const extractComodo = (description: string): string | null => {
+    const match = description.match(/^\[(.*?)\]/);
+    return match ? match[1].trim() : null;
+};
+
+const limparDescricao = (description: string): string => {
+    return description.replace(/^\[.*?\]\s*/, '').trim();
+};
+
 
 // Propriedades Computadas (Logic)
-// ... (itensAgrupados e totalBase mantidas) ...
+const itensAgrupados = computed(() => {
+    if (!data.value || !data.value.itens) return {};
+
+    return data.value.itens.reduce((groups, item) => {
+        const comodoName = extractComodo(item.descricao || '') || 'Geral'; 
+        
+        if (!groups[comodoName]) {
+            groups[comodoName] = { total: 0, itens: [] };
+        }
+        
+        const quantidade = Number(item.quantidade);
+        const preco = Number(item.preco_unitario);
+        const subtotal = quantidade * preco;
+        
+        groups[comodoName].total += subtotal;
+        groups[comodoName].itens.push(item);
+        
+        return groups;
+    }, {});
+});
+
 
 const totalBase = computed(() => {
-    // ... (Mantido)
     const baseFromData = parseFloat(data.value?.valor_total || data.value?.total || 0);
     if (baseFromData > 0) return baseFromData;
 
@@ -135,34 +161,26 @@ const totalBase = computed(() => {
     }, 0);
 });
 
-
-// [CORREÇÃO]: Cálculo do valor acrescido (Total Final - Total Base)
 const totalMarkupAcrescido = computed(() => {
-    // Total Acréscimo = Total Base * (Fator - 1)
     return totalBase.value * (fatorMultiplicador.value - 1); 
 });
 
-// [CORREÇÃO]: Cálculo do Total Final (Multiplicação Direta)
 const totalFinal = computed(() => {
     const finalFromData = parseFloat(data.value?.final_total || 0);
-    // Se o valor final já foi salvo, usa o valor salvo
     if (finalFromData > 0) return finalFromData;
 
-    // Novo cálculo: Total Base * Fator
     return totalBase.value * fatorMultiplicador.value;
 });
 
 
-// [CORREÇÃO]: Função que salva o Fator (e o converte para Percentual para o DB)
 const applyMarkup = async () => {
-    if (fatorMultiplicador.value < 1) {
+    const fator = fatorMultiplicador.value;
+    const percentToSave = (fator - 1) * 100; 
+
+    if (fator < 1) {
         alert('O Fator Multiplicador deve ser maior ou igual a 1 (1.00).');
         return;
     }
-    const fator = fatorMultiplicador.value;
-    
-    // Converte o Fator (1.2) de volta para Percentual (20) para manter a coluna DB consistente
-    const percentToSave = (fator - 1) * 100; 
 
     if (!confirm(`Confirma aplicar o Fator Multiplicador de ${fator.toFixed(2)}x (Acréscimo de ${percentToSave.toFixed(2)}%)?`)) return;
     
@@ -171,9 +189,7 @@ const applyMarkup = async () => {
         const response = await $fetch(`/api/pedidos/${id}/markup`, {
             method: 'PATCH',
             body: { 
-                // Envia o percentual para o backend (para a coluna markup_percent)
                 markup_percent: percentToSave,
-                // E o fator (necessário para o cálculo de final_total na API)
                 fator_multiplicador: fator 
             }
         });
@@ -188,14 +204,11 @@ const applyMarkup = async () => {
     }
 }
 
-
-// [CORREÇÃO]: Função que busca o valor salvo e o converte para Fator
 const fetchData = async () => {
     try {
         const response = await $fetch(`/api/pedidos/${id}`); 
         data.value = response;
 
-        // Se a API retornar o percentual salvo (ex: 20.00), converte para Fator (1.2)
         if (data.value && data.value.markup_percent) {
             const percent = parseFloat(data.value.markup_percent);
             fatorMultiplicador.value = 1 + (percent / 100); 
@@ -208,6 +221,17 @@ const fetchData = async () => {
 };
 
 onMounted(fetchData);
-
-// ... (Restante do script e utilitários mantidos)
 </script>
+
+<style scoped>
+@media print {
+  .print\:hidden {
+    display: none !important;
+  }
+  .max-w-4xl.mx-auto {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+}
+</style>
