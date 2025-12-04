@@ -8,15 +8,18 @@ export default defineEventHandler(async (event) => {
   const token = getCookie(event, 'usuario_sessao')
   if (!token) throw createError({ statusCode: 401, message: 'Login necessário' })
 
+  // Verify token and extract user info
   const user = jwt.verify(token, process.env.JWT_SECRET as string) as any
   const body = await readBody(event)
 
+  // Basic validation
   if (!body.cliente_id || !body.itens || body.itens.length === 0) {
     throw createError({ statusCode: 400, message: 'Pedido precisa de cliente e itens.' })
   }
 
   try {
-    // 1. Cria o Pedido (Cabeçalho)
+    // 1. Create the Order Header (Pedido)
+    // We insert the user.id into the 'usuario_id' column
     const pedido = await sql`
       INSERT INTO pedidos (
         empresa_id, 
@@ -38,7 +41,7 @@ export default defineEventHandler(async (event) => {
     `
     const pedidoId = pedido[0].id
 
-    // 2. Insere os Itens
+    // 2. Insert Order Items (Itens)
     for (const item of body.itens) {
       await sql`
         INSERT INTO pedidos_itens (
@@ -51,7 +54,7 @@ export default defineEventHandler(async (event) => {
           ${item.descricao}, 
           ${item.medidas || ''}, 
           ${item.material || ''}, 
-          ${item.preco_unitario}, -- preco_custo
+          ${item.preco_unitario}, 
           ${item.multiplicador || 1.0}, 
           ${item.preco_venda}
         )
@@ -60,8 +63,12 @@ export default defineEventHandler(async (event) => {
 
     return { success: true, id: pedidoId }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro ao criar pedido:", error)
-    throw createError({ statusCode: 500, message: 'Erro interno ao salvar pedido' })
+    // Return a more descriptive error message if possible
+    throw createError({ 
+      statusCode: 500, 
+      message: `Erro interno ao salvar pedido: ${error.message}` 
+    })
   }
 })
