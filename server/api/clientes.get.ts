@@ -34,6 +34,7 @@ export default defineEventHandler(async (event) => {
             WHERE empresa_id = ${usuario.empresa_id} 
                OR empresa_id IS NULL 
             ORDER BY nome ASC
+            
         `
         return clientes
 
