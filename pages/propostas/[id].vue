@@ -60,12 +60,11 @@
 
             <div v-for="(grupo, comodoNome) in itensAgrupados" :key="comodoNome" class="mb-8 border p-6 rounded-lg bg-gray-50 print:break-inside-avoid">
                 <h3 class="font-extrabold text-xl mb-3 text-indigo-700 border-b pb-2">
-                    {{ comodoNome }}
-                </h3>
+                    {{ comodoNome }} </h3>
 
                 <ul class="space-y-2 text-sm text-gray-700">
                     <li v-for="(item, index) in grupo.itens" :key="index" class="flex justify-between border-b border-dashed pb-1">
-                        <span class="w-3/5">{{ item.descricao }} ({{ item.quantidade }}x)</span> 
+                        <span class="w-3/5">{{ limparDescricao(item.descricao) }} ({{ item.quantidade }}x)</span> 
                         <span class="font-medium">{{ formatarMoeda(Number(item.quantidade) * Number(item.preco_unitario)) }}</span>
                     </li>
                 </ul>
@@ -113,109 +112,122 @@ const savingMarkup = ref(false);
 
 const markupPercent = ref(0); 
 
+// [FUNÇÃO NOVA]: Extrai o nome do cômodo da descrição
+const extractComodo = (description: string): string | null => {
+    // Procura pelo prefixo entre colchetes, ex: [Cozinha Planejada]
+    const match = description.match(/^\[(.*?)\]/);
+    return match ? match[1].trim() : null;
+};
+
+// [FUNÇÃO NOVA]: Limpa a descrição para exibição (remove o prefixo)
+const limparDescricao = (description: string): string => {
+    // Remove o prefixo [Nome do Cômodo] e qualquer espaço em branco subsequente
+    return description.replace(/^\[.*?\]\s*/, '').trim();
+};
+
+
 // Propriedades Computadas (Logic)
-
 const itensAgrupados = computed(() => {
-    if (!data.value || !data.value.itens) return {};
+    if (!data.value || !data.value.itens) return {};
 
-    return data.value.itens.reduce((groups, item) => {
-        // [CORREÇÃO FINAL]: Lê o nome da coluna bruta 'comodo'
-        const comodoName = String(item.comodo || '').trim() || 'Geral'; 
-        
-        if (!groups[comodoName]) {
-            groups[comodoName] = { total: 0, itens: [] };
-        }
-        
-        const quantidade = Number(item.quantidade);
-        const preco = Number(item.preco_unitario);
-        const subtotal = quantidade * preco;
-        
-        groups[comodoName].total += subtotal;
-        groups[comodoName].itens.push(item);
-        
-        return groups;
-    }, {});
+    return data.value.itens.reduce((groups, item) => {
+        // [LEITURA FINAL]: Tenta extrair o nome do cômodo da descrição (o nosso workaround)
+        const comodoName = extractComodo(item.descricao || '') || 'Geral'; 
+        
+        if (!groups[comodoName]) {
+            groups[comodoName] = { total: 0, itens: [] };
+        }
+        
+        const quantidade = Number(item.quantidade);
+        const preco = Number(item.preco_unitario);
+        const subtotal = quantidade * preco;
+        
+        groups[comodoName].total += subtotal;
+        groups[comodoName].itens.push(item);
+        
+        return groups;
+    }, {});
 });
 
 
-// ... (resto das funções computadas e actions mantidas) ...
-
 const totalBase = computed(() => {
-    const baseFromData = parseFloat(data.value?.valor_total || data.value?.total || 0);
-    if (baseFromData > 0) return baseFromData;
+    const baseFromData = parseFloat(data.value?.valor_total || data.value?.total || 0);
+    if (baseFromData > 0) return baseFromData;
 
-    if (!data.value || !data.value.itens) return 0;
-    return data.value.itens.reduce((sum: number, item: any) => {
-        const quantidade = Number(item.quantidade || item.quantidade);
-        const preco = Number(item.preco_unitario || item.preco_unitario);
-        return sum + (quantidade * preco);
-    }, 0);
+    if (!data.value || !data.value.itens) return 0;
+    return data.value.itens.reduce((sum: number, item: any) => {
+        const quantidade = Number(item.quantidade || item.quantidade);
+        const preco = Number(item.preco_unitario || item.preco_unitario);
+        return sum + (quantidade * preco);
+    }, 0);
 });
 
 const totalMarkupAcrescido = computed(() => {
-    return totalBase.value * (markupPercent.value / 100);
+    return totalBase.value * (markupPercent.value / 100);
 });
 const totalFinal = computed(() => {
-    const finalFromData = parseFloat(data.value?.final_total || 0);
-    if (finalFromData > 0) return finalFromData;
+    const finalFromData = parseFloat(data.value?.final_total || 0);
+    if (finalFromData > 0) return finalFromData;
 
-    return totalBase.value + totalMarkupAcrescido.value;
+    return totalBase.value + totalMarkupAcrescido.value;
 });
 
 
 const applyMarkup = async () => {
-    if (!confirm(`Confirma aplicar um acréscimo de ${markupPercent.value}% ao valor total?`)) return;
-    
-    savingMarkup.value = true;
-    try {
-        const response = await $fetch(`/api/pedidos/${id}/markup`, {
-            method: 'PATCH',
-            body: { markup_percent: markupPercent.value }
-        });
-        
-        data.value.final_total = response.updated.final_total;
-        alert('Markup salvo e total final atualizado!');
+    if (!confirm(`Confirma aplicar um acréscimo de ${markupPercent.value}% ao valor total?`)) return;
+    
+    savingMarkup.value = true;
+    try {
+        const response = await $fetch(`/api/pedidos/${id}/markup`, {
+            method: 'PATCH',
+            body: { markup_percent: markupPercent.value }
+        });
+        
+        data.value.final_total = response.updated.final_total;
+        alert('Markup salvo e total final atualizado!');
 
-    } catch (e: any) {
-        alert(`Erro ao salvar markup: ${e.message || 'Erro de servidor'}`);
-    } finally {
-        savingMarkup.value = false;
-    }
+    } catch (e: any) {
+        alert(`Erro ao salvar markup: ${e.message || 'Erro de servidor'}`);
+    } finally {
+        savingMarkup.value = false;
+    }
 }
 
 const fetchData = async () => {
-    try {
-        const response = await $fetch(`/api/pedidos/${id}`); 
-        data.value = response;
+    try {
+        const response = await $fetch(`/api/pedidos/${id}`); 
+        data.value = response;
 
-        if (data.value && data.value.markup_percent) {
-            markupPercent.value = parseFloat(data.value.markup_percent);
-        }
-    } catch (e: any) {
-        error.value = e.data || e; 
-    } finally {
-        loading.value = false;
-    }
+        if (data.value && data.value.markup_percent) {
+            markupPercent.value = parseFloat(data.value.markup_percent);
+        }
+    } catch (e: any) {
+        error.value = e.data || e; 
+    } finally {
+        loading.value = false;
+    }
 };
 
-// Funções utilitárias (mantidas)
-function formatarMoeda(valor: number): string { /* ... */ }
-function formatarData(data: string): string { /* ... */ }
-function printProposal(): void { /* ... */ }
-
-
 onMounted(fetchData);
-</script>
 
-<style scoped>
-@media print {
-  .print\:hidden {
-    display: none !important;
-  }
-  .max-w-4xl.mx-auto {
-    width: 100%;
-    margin: 0;
-    padding: 0;
-  }
+// Funções utilitárias (mantidas)
+function formatarMoeda(valor: number): string {
+    const numero = Number(valor);
+    if (isNaN(numero)) return 'R$ 0,00';
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(numero);
 }
-</style>
+
+function formatarData(data: string): string {
+    if (!data) return 'N/A';
+    try {
+        return new Date(data).toLocaleDateString('pt-BR');
+    } catch {
+        return data;
+    }
+}
+
+function printProposal(): void {
+  window.print();
+}
+
+</script>
