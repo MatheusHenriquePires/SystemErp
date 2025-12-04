@@ -1,5 +1,6 @@
 import { lerToken } from '~/server/utils/lerToken'
-import { sql } from '~/server/utils/db' 
+import { sql } from '~/server/database' // Add the sql import
+
 export default defineEventHandler(async (event) => {
   const cookie = getCookie(event, 'usuario_sessao')
   if (!cookie) throw createError({ statusCode: 401, message: 'Login necessário' })
