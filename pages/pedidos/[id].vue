@@ -106,34 +106,53 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+import { useRoute } from 'nuxt/app';
+
 const id = useRoute().params.id;
 const data = ref<any>(null);
 const loading = ref(true);
 const error = ref<any>(null);
 const savingMarkup = ref(false);
 
-const fatorMultiplicador = ref(1.0); // NOVO ESTADO
+const fatorMultiplicador = ref(1.0); 
 
-// [FUNÇÃO NOVA]: Extrai o nome do cômodo da descrição
+// --- FUNÇÕES UTILITÁRIAS ---
+
 const extractComodo = (description: string): string | null => {
-    // Procura pelo prefixo entre colchetes, ex: [Cozinha Planejada]
     const match = description.match(/^\[(.*?)\]/);
     return match ? match[1].trim() : null;
 };
 
-// [FUNÇÃO NOVA]: Limpa a descrição para exibição (remove o prefixo)
 const limparDescricao = (description: string): string => {
-    // Remove o prefixo [Nome do Cômodo] e qualquer espaço em branco subsequente
     return description.replace(/^\[.*?\]\s*/, '').trim();
 };
 
+function formatarMoeda(valor: number): string {
+    const numero = Number(valor);
+    if (isNaN(numero)) return 'R$ 0,00';
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(numero);
+}
 
-// Propriedades Computadas (Logic)
+function formatarData(data: string): string {
+    if (!data) return 'N/A';
+    try {
+        return new Date(data).toLocaleDateString('pt-BR');
+    } catch {
+        return data;
+    }
+}
+
+function printProposal(): void {
+  window.print();
+}
+
+// --- PROPRIEDADES COMPUTADAS ---
+
 const itensAgrupados = computed(() => {
     if (!data.value || !data.value.itens) return {};
 
     return data.value.itens.reduce((groups, item) => {
-        // [LEITURA FINAL]: Tenta extrair o nome do cômodo da descrição (o nosso workaround)
         const comodoName = extractComodo(item.descricao || '') || 'Geral'; 
         
         if (!groups[comodoName]) {
@@ -178,46 +197,12 @@ const totalFinal = computed(() => {
 });
 
 
-<script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useRoute } from 'nuxt/app';
+// --- FUNÇÕES DE AÇÃO ---
 
-const id = useRoute().params.id;
-const data = ref<any>(null);
-const loading = ref(true);
-const error = ref<any>(null);
-const savingMarkup = ref(false);
-
-const fatorMultiplicador = ref(1.0); 
-
-// Funções utilitárias (mantidas)
-const extractComodo = (description: string): string | null => { /* ... */ };
-const limparDescricao = (description: string): string => { /* ... */ };
-function formatarMoeda(valor: number): string { /* ... */ }
-function formatarData(data: string): string { /* ... */ }
-function printProposal(): void { /* ... */ }
-
-// Propriedades Computadas (Logic)
-const itensAgrupados = computed(() => { /* ... */ });
-const totalBase = computed(() => { /* ... */ });
-const totalMarkupAcrescido = computed(() => {
-    const fator = fatorMultiplicador.value > 0 ? fatorMultiplicador.value : 1.0;
-    return totalBase.value * (fator - 1); 
-});
-const totalFinal = computed(() => {
-    const finalFromData = parseFloat(data.value?.final_total || 0);
-    if (finalFromData > 0) return finalFromData;
-    
-    const fator = fatorMultiplicador.value > 0 ? fatorMultiplicador.value : 1.0;
-    return totalBase.value * fator;
-});
-
-
-// [CORREÇÃO FINAL]: Função que salva o Fator
 const applyMarkup = async () => {
     
     let fator = fatorMultiplicador.value;
-    // 1. Tratamento extremo contra null/NaN/0
+    // 1. Tratamento robusto contra input vazio/NaN
     if (!fator || isNaN(fator) || fator < 1.0) {
         fator = 1.0;
         fatorMultiplicador.value = 1.0; 
@@ -233,7 +218,7 @@ const applyMarkup = async () => {
             method: 'PATCH',
             body: { 
                 markup_percent: percentToSave,
-                fator_multiplicador: fator // Envia o valor corrigido
+                fator_multiplicador: fator 
             }
         });
         
@@ -247,7 +232,6 @@ const applyMarkup = async () => {
     }
 }
 
-// [FUNÇÃO DE BUSCA MANTIDA]
 const fetchData = async () => {
     try {
         const response = await $fetch(`/api/pedidos/${id}`); 
@@ -268,51 +252,6 @@ const fetchData = async () => {
 };
 
 onMounted(fetchData);
-
-// ... (Restante das funções)
-</script>
-
-const fetchData = async () => {
-    try {
-        const response = await $fetch(`/api/pedidos/${id}`); 
-        data.value = response;
-
-        if (data.value && data.value.markup_percent) {
-            const percent = parseFloat(data.value.markup_percent);
-            const validPercent = isNaN(percent) ? 0 : percent;
-            fatorMultiplicador.value = 1 + (validPercent / 100); 
-        } else {
-            fatorMultiplicador.value = 1.0;
-        }
-    } catch (e: any) {
-        error.value = e.data || e; 
-    } finally {
-        loading.value = false;
-    }
-};
-
-onMounted(fetchData);
-
-// Funções utilitárias (mantidas)
-function formatarMoeda(valor: number): string {
-    const numero = Number(valor);
-    if (isNaN(numero)) return 'R$ 0,00';
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(numero);
-}
-
-function formatarData(data: string): string {
-    if (!data) return 'N/A';
-    try {
-        return new Date(data).toLocaleDateString('pt-BR');
-    } catch {
-        return data;
-    }
-}
-
-function printProposal(): void {
-  window.print();
-}
-
 </script>
 
 <style scoped>
