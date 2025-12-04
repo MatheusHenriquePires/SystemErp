@@ -14,8 +14,8 @@
       <div v-if="loading" class="text-center py-20">
         Carregando Proposta...
       </div>
-      <div v-else-if="error" class="text-red-600 border border-red-200 p-4 rounded bg-red-50">
-        Erro ao carregar proposta: {{ error.message }}
+      <div v-else-if="error || !data" class="text-red-600 border border-red-200 p-4 rounded bg-red-50">
+        Erro ao carregar proposta. O pedido não foi encontrado ou a sessão expirou.
       </div>
       
       <div v-else class="space-y-6">
@@ -84,7 +84,7 @@
 
 <script setup lang="ts">
 const id = useRoute().params.id;
-const data = ref<any>(null);
+const data = ref<any>(null); // Continua como null
 const loading = ref(true);
 const error = ref<any>(null);
 
@@ -97,7 +97,6 @@ const formatarMoeda = (valor: any) => {
 
 const formatarData = (data: string) => {
     if (!data) return 'N/A';
-    // Se for uma string ISO 8601, formata para dd/mm/aaaa
     try {
         return new Date(data).toLocaleDateString('pt-BR');
     } catch {
@@ -113,11 +112,13 @@ const printProposal = () => {
 // Fetch data
 const fetchData = async () => {
     try {
-        // Usa a API de pedidos para buscar todos os dados (cabeçalho e itens)
         const response = await $fetch(`/api/pedidos/${id}`); 
-        data.value = response;
+        // Se a resposta for um objeto vazio, data.value será um objeto vazio. 
+        // Para evitar o crash, garantimos que seja null ou o objeto esperado.
+        data.value = response && response.cabecalho ? response : null; 
     } catch (e: any) {
-        error.value = e.data || e;
+        // Pega o erro para o v-else-if
+        error.value = e.data || e; 
     } finally {
         loading.value = false;
     }
@@ -125,11 +126,9 @@ const fetchData = async () => {
 
 onMounted(fetchData);
 
-// Otimização de SEO/Título
 useHead({ 
     title: `Proposta #${id} - ${data.value?.cabecalho?.cliente_nome || 'Carregando...'}`,
 });
-
 </script>
 
 <style scoped>
