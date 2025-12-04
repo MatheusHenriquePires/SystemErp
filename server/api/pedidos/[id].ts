@@ -1,4 +1,4 @@
-// server/api/pedidos/[id].ts (Visualização Unificada de Pedido - CORREÇÃO DEFINITIVA)
+// server/api/pedidos/[id].ts (Busca de Detalhes do Pedido - Corrigido o nome da tabela)
 import sql from '~/server/database'
 import { defineEventHandler, getRouterParam, createError, getCookie } from 'h3'
 import jwt from 'jsonwebtoken'
@@ -30,7 +30,7 @@ export default defineEventHandler(async (event) => {
     if (!id) throw createError({ statusCode: 400, message: 'ID do pedido é obrigatório.' });
 
     try {
-        // 3. Pega o Cabeçalho (incluindo as colunas de markup)
+        // 3. Pega o Cabeçalho (incluindo colunas de markup)
         const [dados] = await sql`
             SELECT
                 p.id, p.data_criacao as quote_date, p.valor_total as total_amount, p.payment_terms, p.status, p.cliente_nome,
@@ -43,11 +43,11 @@ export default defineEventHandler(async (event) => {
 
         if (!dados) throw createError({ statusCode: 404, message: 'Pedido não encontrado.' })
 
-        // 4. Pega os Itens - [CORREÇÃO FINAL: INCLUÍDO COMODO NO SELECT]
-       const itens = await sql`
+        // 4. Pega os Itens - [CORRIGIDO: USANDO TABELA ONDE 'comodo' EXISTE]
+        const itens = await sql`
             SELECT
-                nome_produto AS name, quantidade AS quantity, preco_unitario AS unit_price, total_preco AS total_price, comodo
-            FROM pedidos_itens -- <--- PROVAVEL CORREÇÃO: Usando 'pedidos_itens' em vez de 'itens_pedido'
+                descricao AS name, quantidade AS quantity, preco_unitario AS unit_price, total_preco AS total_price, comodo -- CAMPO COMODO INCLUSO
+            FROM pedidos_itens -- <--- TABELA CORRIGIDA
             WHERE pedido_id = ${id}
         `
 
