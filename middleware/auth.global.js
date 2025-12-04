@@ -1,28 +1,28 @@
-// middleware/auth.global.ts
-
-// Esta função será executada em TODAS as rotas
 export default defineNuxtRouteMiddleware((to, from) => {
-    // 1. Onde está a sessão? (Lê o cookie)
-    const cookie = useCookie('usuario_sessao');
-    const isAuthenticated = !!cookie.value; // Verifica se o cookie tem algum valor
+    // 1. Lê o cookie de sessão
+    // O Nuxt sincroniza isso automaticamente entre Server e Client
+    const cookie = useCookie('usuario_sessao')
+    
+    // 2. Definimos as rotas PÚBLICAS (onde não precisa estar logado)
+    const publicRoutes = ['/login', '/esqueci-senha']
 
-    // Define as rotas que são protegidas
-    const protectedRoutes = ['/', '/pedidos', '/produtos', '/clientes', '/produtos/importar'];
+    // Verifica se a rota atual é pública
+    const isPublicRoute = publicRoutes.includes(to.path)
 
-    // 2. Se a rota atual é protegida E o usuário NÃO está autenticado
-    if (protectedRoutes.includes(to.path) && !isAuthenticated) {
-        
-        // Se a rota for a home ('/'), verificamos se o usuário está tentando acessar o dashboard
-        if (to.path === '/') {
-             return navigateTo('/login');
-        }
-        
-        // Redireciona para o login
-        return navigateTo('/login'); 
+    // LOG PARA DEBUG (Abra o console do navegador F12 para ver isso)
+    if (process.client) {
+        console.log(`Rota: ${to.path} | Tem Cookie? ${!!cookie.value}`)
     }
 
-    // 3. Se o usuário tentar acessar o /login mas já estiver logado, joga para o dashboard
-    if (to.path === '/login' && isAuthenticated) {
-        return navigateTo('/');
+    // CASO 1: Usuário NÃO tem cookie e tenta acessar rota PRIVADA
+    // (Se não é pública e não tem cookie -> Manda pro Login)
+    if (!isPublicRoute && !cookie.value) {
+        return navigateTo('/login')
     }
-});
+
+    // CASO 2: Usuário TEM cookie e tenta acessar rota PÚBLICA (Login)
+    // (Já está logado, não precisa ver tela de login -> Manda pra Home)
+    if (isPublicRoute && cookie.value) {
+        return navigateTo('/')
+    }
+})
