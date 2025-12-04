@@ -1,0 +1,47 @@
+// prisma/schema.prisma
+
+// Define o cliente que será gerado
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Define o provedor do banco de dados
+datasource db {
+  provider = "postgresql"
+  // Esta linha usará a DATABASE_URL que você confirmou
+  url      = DATABASE_URL=postgres://postgres:04854e18ed26b3bcebeb@system_systemerrp:5432/system?sslmode=disable
+}
+
+// --- Definição dos Modelos ---
+
+model pedidos {
+  id              Int       @id @default(autoincrement())
+  cliente_id      Int?
+  empresa_id      Int?
+  cliente_nome    String?   @db.VarChar(255)
+  status          String?   @db.VarChar(50)
+  data_criacao    DateTime? @db.Timestamptz(6)
+  valor_total     Decimal?  @db.Decimal
+  markup_percent  Decimal?  @db.Decimal // Nova coluna adicionada
+  final_total     Decimal?  @db.Decimal  // Nova coluna adicionada
+  
+  // Relacionamento com itens
+  itens           pedidos_itens[] @relation("PedidoItens")
+  
+  @@map("pedidos") // Mapeia para a tabela 'pedidos'
+}
+
+model pedidos_itens {
+  id              Int       @id @default(autoincrement())
+  pedido_id       Int
+  descricao       String?   @db.VarChar(255)
+  quantidade      Decimal?  @default(1) @db.Decimal
+  preco_unitario  Decimal?  @default(0) @db.Decimal
+  comodo          String?   @db.VarChar(100) // O CAMPO QUE ESTAVA FALHANDO
+  total_preco     Decimal?  @db.Decimal
+  
+  // Relacionamento com pedido
+  pedido          pedidos   @relation("PedidoItens", fields: [pedido_id], references: [id])
+  
+  @@map("pedidos_itens") // Mapeia para a tabela 'pedidos_itens'
+}
