@@ -118,20 +118,74 @@ const savingMarkup = ref(false);
 const fatorMultiplicador = ref(1.0); 
 
 // --- FUNÇÕES UTILITÁRIAS ---
-const extractComodo = (description: string): string | null => { /* ... */ };
-const limparDescricao = (description: string): string => { /* ... */ };
-function formatarMoeda(valor: number): string { /* ... */ }
-function formatarData(data: string): string { /* ... */ }
-function printProposal(): void { /* ... */ }
-// ... (demais funções utilitárias)
+const extractComodo = (description: string): string | null => {
+    const match = description.match(/^\[(.*?)\]/);
+    return match ? match[1].trim() : null;
+};
+
+const limparDescricao = (description: string): string => {
+    return description.replace(/^\[.*?\]\s*/, '').trim();
+};
+
+function formatarMoeda(valor: number): string {
+    const numero = Number(valor);
+    if (isNaN(numero)) return 'R$ 0,00';
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(numero);
+}
+
+function formatarData(data: string): string {
+    if (!data) return 'N/A';
+    try {
+        return new Date(data).toLocaleDateString('pt-BR');
+    } catch {
+        return data;
+    }
+}
+
+function printProposal(): void {
+  window.print();
+}
 
 // --- PROPRIEDADES COMPUTADAS ---
-const itensAgrupados = computed(() => { /* ... */ });
-const totalBase = computed(() => { /* ... */ });
+const itensAgrupados = computed(() => {
+    if (!data.value || !data.value.itens) return {};
+
+    return data.value.itens.reduce((groups, item) => {
+        const comodoName = extractComodo(item.descricao || '') || 'Geral'; 
+        
+        if (!groups[comodoName]) {
+            groups[comodoName] = { total: 0, itens: [] };
+        }
+        
+        const quantidade = Number(item.quantidade);
+        const preco = Number(item.preco_unitario);
+        const subtotal = quantidade * preco;
+        
+        groups[comodoName].total += subtotal;
+        groups[comodoName].itens.push(item);
+        
+        return groups;
+    }, {});
+});
+
+
+const totalBase = computed(() => {
+    const baseFromData = parseFloat(data.value?.valor_total || data.value?.total || 0);
+    if (baseFromData > 0) return baseFromData;
+
+    if (!data.value || !data.value.itens) return 0;
+    return data.value.itens.reduce((sum: number, item: any) => {
+        const quantidade = Number(item.quantidade || item.quantidade);
+        const preco = Number(item.preco_unitario || item.preco_unitario);
+        return sum + (quantidade * preco);
+    }, 0);
+});
+
 const totalMarkupAcrescido = computed(() => {
     const fator = fatorMultiplicador.value > 0 ? fatorMultiplicador.value : 1.0;
     return totalBase.value * (fator - 1); 
 });
+
 const totalFinal = computed(() => {
     const finalFromData = parseFloat(data.value?.final_total || 0);
     if (finalFromData > 0) return finalFromData;
@@ -141,7 +195,8 @@ const totalFinal = computed(() => {
 });
 
 
-// [CORREÇÃO FINAL]: Função que salva o Fator
+// --- FUNÇÕES DE AÇÃO ---
+
 const applyMarkup = async () => {
     
     let fator = fatorMultiplicador.value;
@@ -175,7 +230,24 @@ const applyMarkup = async () => {
     }
 }
 
-const fetchData = async () => { /* ... */ };
+const fetchData = async () => {
+    try {
+        const response = await $fetch(`/api/pedidos/${id}`); 
+        data.value = response;
+
+        if (data.value && data.value.markup_percent) {
+            const percent = parseFloat(data.value.markup_percent);
+            const validPercent = isNaN(percent) ? 0 : percent;
+            fatorMultiplicador.value = 1 + (validPercent / 100); 
+        } else {
+            fatorMultiplicador.value = 1.0;
+        }
+    } catch (e: any) {
+        error.value = e.data || e; 
+    } finally {
+        loading.value = false;
+    }
+};
 
 onMounted(fetchData);
 </script>
