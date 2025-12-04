@@ -179,15 +179,15 @@ const totalFinal = computed(() => {
 
 
 const applyMarkup = async () => {
-    // 1. Força a conversão para float e garante o valor mínimo de 1.0
-    // O parseFloat(fatorMultiplicador.value || 1.0) garante que se for null/vazio/NaN, ele usa 1.0.
-    let fator = parseFloat(fatorMultiplicador.value) || 1.0; 
     
-    // 2. Garante que o valor no input é pelo menos 1.0 para manter a UI consistente
-    if (fator < 1.0) {
+    // [FINAL CORREÇÃO]: Garante que o valor é válido antes de prosseguir
+    let fator = fatorMultiplicador.value;
+    
+    // Trata valores nulos, indefinidos, ou zero/vazios
+    if (!fator || isNaN(fator) || fator < 1.0) {
         fator = 1.0;
+        fatorMultiplicador.value = 1.0; // Atualiza o ref para a UI
     }
-    fatorMultiplicador.value = fator;
     
     const percentToSave = (fator - 1) * 100; 
 
@@ -195,12 +195,12 @@ const applyMarkup = async () => {
     
     savingMarkup.value = true;
     try {
-        // 3. Envia o valor corrigido
         const response = await $fetch(`/api/pedidos/${id}/markup`, {
             method: 'PATCH',
             body: { 
+                // Envia o valor corrigido e validado
                 markup_percent: percentToSave,
-                fator_multiplicador: fator // Envia o valor corrigido
+                fator_multiplicador: fator 
             }
         });
         
