@@ -3,7 +3,6 @@ import { defineNuxtConfig } from 'nuxt/config'
 export default defineNuxtConfig({
   modules: [
     '@nuxtjs/tailwindcss',
-    // NOVO: Módulo para gerenciar o Dark Mode
     '@nuxtjs/color-mode' 
   ],
 
@@ -16,22 +15,14 @@ export default defineNuxtConfig({
     },
   },
   
-  // Configuração do Módulo de Cores
   colorMode: {
-    classSuffix: '' // Isso garante que o Nuxt use apenas a classe 'dark'
+    classSuffix: ''
   },
 
+  // ✅ CORREÇÃO: Removemos o 'externals' e 'inline'
+  // O Nuxt agora vai tratar o pdf-parse como uma dependência externa normal (o jeito certo para libs Node antigas)
   nitro: {
-    preset: 'node-server',
-    externals: {
-      inline: [
-        'pdf-parse',
-        'pdfjs-dist',
-        'pdfjs-dist/build/pdf.js',
-        'pdfjs-dist/build/pdf.worker.js',
-        'pdfjs-dist/legacy/build/pdf.js'
-      ]
-    }
+    preset: 'node-server'
   },
 
   devtools: { enabled: true },
