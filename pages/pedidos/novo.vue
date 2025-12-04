@@ -1,5 +1,4 @@
 <template>
-    <!-- ✅ BUILD CORRIGIDO: Removemos <NuxtLayout> daqui -->
     <ClientOnly>
         <div class="px-4 py-6 md:px-6 md:py-8 lg:px-8 max-w-4xl mx-auto">
             
@@ -7,21 +6,34 @@
                 <NuxtLink to="/pedidos" class="text-gray-600 hover:text-blue-600 mr-4">
                     &larr; Voltar
                 </NuxtLink>
-                <h1 class="text-3xl font-bold text-gray-900">✨ Novo Orçamento (por Cômodo)</h1>
+                <h1 class="text-3xl font-bold text-gray-900">✨ Novo Orçamento</h1>
             </div>
 
             <form @submit.prevent="submitOrcamento" class="space-y-6">
                 
                 <div class="p-6 border rounded-lg shadow-sm bg-white">
                     <h2 class="text-xl font-semibold mb-4 text-gray-700">Dados Principais</h2>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Responsável</label>
+                            <div class="mt-1 flex items-center bg-gray-100 border border-gray-300 rounded-md p-2">
+                                <span class="text-gray-500 mr-2">👤</span>
+                                <input 
+                                    :value="usuarioAtual" 
+                                    disabled 
+                                    class="bg-transparent border-none text-gray-600 font-bold w-full focus:ring-0 cursor-not-allowed"
+                                />
+                            </div>
+                        </div>
+
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Cliente</label>
                             <select v-model.number="form.cliente_id" required 
                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
                                 
                                 <option disabled value="0">
-                                    {{ loadingClientes ? 'Carregando clientes...' : 'Selecione um cliente...' }}
+                                    {{ loadingClientes ? 'Carregando...' : 'Selecione...' }}
                                 </option>
                                 
                                 <option v-for="cliente in clientes" :key="cliente.id" :value="cliente.id">
@@ -29,6 +41,7 @@
                                 </option>
                             </select>
                         </div>
+                        
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Status Inicial</label>
                             <select v-model="form.status"
@@ -66,7 +79,7 @@
                             <tbody>
                                 <tr v-for="(produto, indexProduto) in comodo.produtos" :key="indexProduto">
                                     <td class="p-2">
-                                        <input v-model="produto.descricao" placeholder="MDF Branco TX, Parafuso..." required class="w-full text-sm border-b border-gray-300 bg-transparent focus:border-blue-500 outline-none" />
+                                        <input v-model="produto.descricao" placeholder="Item..." required class="w-full text-sm border-b border-gray-300 bg-transparent focus:border-blue-500 outline-none" />
                                     </td>
                                     <td class="p-2">
                                         <input v-model.number="produto.quantidade" type="number" step="1" min="1" required class="w-full text-sm text-center border-b border-gray-300 bg-transparent focus:border-blue-500 outline-none" />
@@ -115,7 +128,6 @@
 </template>
 
 <script setup lang="ts">
-// ✅ BUILD CORRIGIDO: Define o layout aqui
 definePageMeta({
     layout: 'dashboard-layout'
 });
@@ -124,6 +136,7 @@ const router = useRouter();
 const submitting = ref(false);
 const clientes = ref<any[]>([]);
 const loadingClientes = ref(true);
+const usuarioAtual = ref('Carregando...'); // ✅ Variável para mostrar o nome
 
 const form = ref({
     cliente_id: 0,
@@ -138,6 +151,20 @@ const form = ref({
         }
     ]
 });
+
+// ✅ Função para carregar quem está logado
+const fetchUsuario = async () => {
+    try {
+        const user: any = await $fetch('/api/me');
+        if (user && user.nome) {
+            usuarioAtual.value = user.nome;
+        } else {
+            usuarioAtual.value = 'Desconhecido';
+        }
+    } catch (e) {
+        usuarioAtual.value = 'Erro ao carregar';
+    }
+};
 
 const fetchClientes = async () => {
     loadingClientes.value = true;
@@ -190,7 +217,6 @@ const removerProduto = (indexComodo: number, indexProduto: number) => {
     }
 };
 
-// Envio Corrigido
 const submitOrcamento = async () => {
     const total = calcularTotalGeral.value;
 
@@ -201,14 +227,13 @@ const submitOrcamento = async () => {
 
     submitting.value = true;
 
-    // ✅ CORREÇÃO LÓGICA: Transforma [Cômodos] em [Itens] para o Banco de Dados
+    // Transforma dados para o Backend
     const itensParaSalvar = form.value.comodos.flatMap(grupo => {
         return grupo.produtos.map(produto => ({
-            comodo: grupo.comodo || 'Geral', // Salva o nome do cômodo
+            comodo: grupo.comodo || 'Geral',
             descricao: produto.descricao,
             quantidade: produto.quantidade,
-            preco_unitario: produto.preco_unitario, // Preço de custo/base
-            // Calcula o preço total do item para referência
+            preco_unitario: produto.preco_unitario,
             preco_venda: Number(produto.preco_unitario) * Number(produto.quantidade),
             multiplicador: 1.0 
         }))
@@ -221,7 +246,7 @@ const submitOrcamento = async () => {
                 cliente_id: form.value.cliente_id,
                 status: form.value.status,
                 valor_total: total,
-                itens: itensParaSalvar // ✅ Envia o formato correto
+                itens: itensParaSalvar
             }
         });
 
@@ -235,5 +260,8 @@ const submitOrcamento = async () => {
     }
 };
 
-onMounted(fetchClientes);
+onMounted(() => {
+    fetchClientes();
+    fetchUsuario(); // ✅ Chama a função ao carregar a página
+});
 </script>

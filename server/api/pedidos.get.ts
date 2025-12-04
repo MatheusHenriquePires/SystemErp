@@ -22,10 +22,12 @@ export default defineEventHandler(async (event) => {
 
     // 2. Main Query with JOIN
     // We join 'pedidos' (p) with 'usuarios' (u) to get the name.
-    const pedidos = await sql`
+   const pedidos = await sql`
       SELECT 
         p.*,
-        COALESCE(u.nome, 'Sistema') as vendedor_nome, -- Gets user name or 'Sistema' if null
+        c.nome as nome_cliente, -- Busca o nome na tabela de clientes
+        c.cidade as cliente_cidade, -- Opcional: útil para o frontend
+        COALESCE(u.nome, 'Sistema') as vendedor_nome,
         (
           SELECT json_agg(i) 
           FROM pedidos_itens i 
@@ -33,6 +35,7 @@ export default defineEventHandler(async (event) => {
         ) as itens
       FROM pedidos p
       LEFT JOIN usuarios u ON p.usuario_id = u.id 
+      LEFT JOIN clientes c ON p.cliente_id = c.id -- ADICIONADO ESSE JOIN
       WHERE p.empresa_id = ${user.empresa_id} 
       ${statusFilter} 
       ORDER BY p.id DESC
