@@ -178,15 +178,49 @@ const totalFinal = computed(() => {
 });
 
 
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+import { useRoute } from 'nuxt/app';
+
+const id = useRoute().params.id;
+const data = ref<any>(null);
+const loading = ref(true);
+const error = ref<any>(null);
+const savingMarkup = ref(false);
+
+const fatorMultiplicador = ref(1.0); 
+
+// Funções utilitárias (mantidas)
+const extractComodo = (description: string): string | null => { /* ... */ };
+const limparDescricao = (description: string): string => { /* ... */ };
+function formatarMoeda(valor: number): string { /* ... */ }
+function formatarData(data: string): string { /* ... */ }
+function printProposal(): void { /* ... */ }
+
+// Propriedades Computadas (Logic)
+const itensAgrupados = computed(() => { /* ... */ });
+const totalBase = computed(() => { /* ... */ });
+const totalMarkupAcrescido = computed(() => {
+    const fator = fatorMultiplicador.value > 0 ? fatorMultiplicador.value : 1.0;
+    return totalBase.value * (fator - 1); 
+});
+const totalFinal = computed(() => {
+    const finalFromData = parseFloat(data.value?.final_total || 0);
+    if (finalFromData > 0) return finalFromData;
+    
+    const fator = fatorMultiplicador.value > 0 ? fatorMultiplicador.value : 1.0;
+    return totalBase.value * fator;
+});
+
+
+// [CORREÇÃO FINAL]: Função que salva o Fator
 const applyMarkup = async () => {
     
-    // [FINAL CORREÇÃO]: Garante que o valor é válido antes de prosseguir
     let fator = fatorMultiplicador.value;
-    
-    // Trata valores nulos, indefinidos, ou zero/vazios
+    // 1. Tratamento extremo contra null/NaN/0
     if (!fator || isNaN(fator) || fator < 1.0) {
         fator = 1.0;
-        fatorMultiplicador.value = 1.0; // Atualiza o ref para a UI
+        fatorMultiplicador.value = 1.0; 
     }
     
     const percentToSave = (fator - 1) * 100; 
@@ -198,9 +232,8 @@ const applyMarkup = async () => {
         const response = await $fetch(`/api/pedidos/${id}/markup`, {
             method: 'PATCH',
             body: { 
-                // Envia o valor corrigido e validado
                 markup_percent: percentToSave,
-                fator_multiplicador: fator 
+                fator_multiplicador: fator // Envia o valor corrigido
             }
         });
         
@@ -213,6 +246,31 @@ const applyMarkup = async () => {
         savingMarkup.value = false;
     }
 }
+
+// [FUNÇÃO DE BUSCA MANTIDA]
+const fetchData = async () => {
+    try {
+        const response = await $fetch(`/api/pedidos/${id}`); 
+        data.value = response;
+
+        if (data.value && data.value.markup_percent) {
+            const percent = parseFloat(data.value.markup_percent);
+            const validPercent = isNaN(percent) ? 0 : percent;
+            fatorMultiplicador.value = 1 + (validPercent / 100); 
+        } else {
+            fatorMultiplicador.value = 1.0;
+        }
+    } catch (e: any) {
+        error.value = e.data || e; 
+    } finally {
+        loading.value = false;
+    }
+};
+
+onMounted(fetchData);
+
+// ... (Restante das funções)
+</script>
 
 const fetchData = async () => {
     try {
