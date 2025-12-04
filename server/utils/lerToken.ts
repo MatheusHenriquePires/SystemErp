@@ -1,8 +1,12 @@
+import jwt from 'jsonwebtoken'
+
 export function lerToken(token: string) {
-  try {
-    const decoded = Buffer.from(token, 'base64').toString()
-    return JSON.parse(decoded)
-  } catch (error) {
-    return null
+  const payload: any = jwt.verify(token, process.env.JWT_SECRET as string)
+
+  return {
+    id: payload.id,
+    empresa_id: payload.empresa_id, // ✅ OBRIGATÓRIO
+    nome: payload.nome,
+    email: payload.email
   }
 }
