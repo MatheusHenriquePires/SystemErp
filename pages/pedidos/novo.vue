@@ -192,6 +192,7 @@ const removerProduto = (indexComodo: number, indexProduto: number) => {
 
 // Envio do Formulário (mantida)
 const submitOrcamento = async () => {
+    // Calcula o total
     form.value.total = calcularTotalGeral.value;
 
     if (!form.value.cliente_id || form.value.total <= 0) {
@@ -201,22 +202,36 @@ const submitOrcamento = async () => {
 
     submitting.value = true;
 
+    // --- CORREÇÃO AQUI ---
+    // Transforma a estrutura visual de "Cômodos" na estrutura de "Itens" para o Banco de Dados
+    const itensParaSalvar = form.value.comodos.flatMap(grupo => {
+        return grupo.produtos.map(produto => ({
+            comodo: grupo.comodo,       // Passa o nome do cômodo para cada item
+            descricao: produto.descricao,
+            quantidade: produto.quantidade,
+            preco_unitario: produto.preco_unitario,
+            preco_venda: produto.quantidade * produto.preco_unitario // Ou conforme sua lógica de backend
+            // Adicione outros campos se seu backend exigir (ex: material, medidas)
+        }))
+    });
+
     try {
         const response = await $fetch('/api/pedidos', {
             method: 'POST',
-            body: form.value
+            body: {
+                cliente_id: form.value.cliente_id,
+                status: form.value.status,
+                valor_total: form.value.total, // Backend espera valor_total ou total? Confirme o nome da coluna
+                itens: itensParaSalvar // ✅ Agora envia o formato correto
+            }
         });
 
         alert(`Orçamento #${response.id} criado com sucesso!`);
         router.push('/pedidos');
     } catch (e: any) {
         console.error(e);
-        alert(`Falha ao criar orçamento: ${e.message}`);
+        alert(`Falha ao criar orçamento: ${e.message || e.data?.message}`);
     } finally {
         submitting.value = false;
     }
 };
-
-// [CHAMADA NOVA]: Buscar clientes ao montar
-onMounted(fetchClientes);
-</script>

@@ -48,17 +48,17 @@
               
               <tr v-for="pedido in pedidos" :key="pedido.id" class="hover:bg-gray-50 transition">
                 <td class="px-6 py-4 text-sm font-bold text-gray-900">#{{ pedido.id }}</td>
-                <td class="px-6 py-4 text-sm text-gray-600">{{ pedido.cliente_nome }}</td>
+                <td class="px-6 py-4 text-sm text-gray-600">{{ pedido.nome_cliente || pedido.cliente_nome }}</td>
                 <td class="px-6 py-4 text-sm text-gray-500">
                   {{ new Date(pedido.data_criacao).toLocaleDateString('pt-BR') }}
                 </td>
                 
-                <!-- TOTAL -->
+                <!-- TOTAL CORRIGIDO -->
                 <td class="px-6 py-4 text-sm font-bold text-gray-900 text-right">
                   {{
                     pedido.status === 'VENDA' || pedido.status === 'PAGO'
                       ? formatarMoeda(pedido.final_total)
-                      : formatarMoeda(pedido.total)
+                      : formatarMoeda(pedido.valor_total || pedido.total)
                   }}
                 </td>
 
@@ -77,7 +77,7 @@
                   <div class="flex justify-center space-x-2">
 
                     <button 
-                      v-if="pedido.status === 'ORCAMENTO'" 
+                      v-if="pedido.status === 'Orçamento' || pedido.status === 'ORCAMENTO'" 
                       @click="atualizarStatus(pedido.id, 'PROPOSTA')"
                       class="text-white bg-purple-600 hover:bg-purple-700 px-3 py-1 rounded text-xs"
                     >
@@ -86,11 +86,10 @@
 
                     <NuxtLink
                       v-if="pedido.status === 'PROPOSTA'" 
-                      :to="`/propostas/${pedido.id}`"
-                      target="_blank"
+                      :to="`/pedidos/${pedido.id}`"
                       class="text-white bg-indigo-500 hover:bg-indigo-600 px-3 py-1 rounded text-xs"
                     >
-                      📄 Proposta
+                      📄 Ver Proposta
                     </NuxtLink>
 
                     <button 
@@ -109,14 +108,13 @@
                       💰 Receber
                     </button>
 
-                    <!-- ✅ BOTÃO DE IMPRIMIR PARA VENDA E PAGO -->
-                    <button 
-                      v-if="pedido.status === 'VENDA' || pedido.status === 'PAGO'" 
-                      @click="abrirImpressao(pedido.id)"
-                      class="text-white bg-gray-700 hover:bg-gray-800 px-3 py-1 rounded text-xs"
+                    <!-- ✅ BOTÃO DE IMPRIMIR PARA TODOS -->
+                    <NuxtLink 
+                      :to="`/pedidos/${pedido.id}`"
+                      class="text-white bg-gray-700 hover:bg-gray-800 px-3 py-1 rounded text-xs flex items-center gap-1"
                     >
-                      🖨️ Imprimir
-                    </button>
+                      🖨️ Abrir
+                    </NuxtLink>
 
                   </div>
                 </td>
@@ -140,13 +138,14 @@ const filtroAtual = ref('TODOS');
 const abas = [
   { key: 'TODOS', label: 'Todos' },
   { key: 'ORCAMENTO', label: '📝 Orçamentos' },
-  { key: 'PROPOSTA', label: '📢 Propostas Enviadas' },
-  { key: 'VENDA', label: '📦 Vendas Abertas' },
+  { key: 'PROPOSTA', label: '📢 Propostas' },
+  { key: 'VENDA', label: '📦 Vendas' },
   { key: 'PAGO', label: '✅ Finalizados' }
 ];
 
 const classesStatus: Record<string, string> = {
   'ORCAMENTO': 'bg-yellow-100 text-yellow-800',
+  'Orçamento': 'bg-yellow-100 text-yellow-800',
   'PROPOSTA': 'bg-indigo-100 text-indigo-800',
   'VENDA': 'bg-blue-100 text-blue-800',
   'PAGO': 'bg-green-100 text-green-800',
@@ -156,8 +155,10 @@ const classesStatus: Record<string, string> = {
 const carregarPedidos = async () => {
   loading.value = true;
   try {
-    const data = await $fetch(`/api/pedidos?status=${filtroAtual.value}`);
+    const data: any = await $fetch(`/api/pedidos?status=${filtroAtual.value}`);
     pedidos.value = data || [];
+  } catch (error) {
+    console.error("Erro ao carregar pedidos", error);
   } finally {
     loading.value = false;
   }
@@ -169,6 +170,8 @@ const mudarAba = (novoStatus: string) => {
 };
 
 const atualizarStatus = async (id: number, novoStatus: string) => {
+  if(!confirm(`Deseja alterar o status para ${novoStatus}?`)) return;
+  
   await $fetch('/api/pedidos', {
     method: 'PUT',
     body: { id, status: novoStatus }
@@ -176,12 +179,14 @@ const atualizarStatus = async (id: number, novoStatus: string) => {
   await carregarPedidos();
 };
 
-const abrirImpressao = (id: number) => {
-  window.open(`/pedidos/imprimir/${id}`, '_blank');
+// --- CORREÇÃO DO FORMATAR MOEDA ---
+const formatarMoeda = (val: any) => {
+  // Converte para número, se falhar vira 0. Resolve o "NaN".
+  const numero = Number(val);
+  const valorSeguro = isNaN(numero) ? 0 : numero;
+  
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valorSeguro);
 };
-
-const formatarMoeda = (val: number) =>
-  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(val));
 
 onMounted(carregarPedidos);
 useHead({ title: 'Gestão de Pedidos' });
