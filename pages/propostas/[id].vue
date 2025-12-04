@@ -106,15 +106,20 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+import { useRoute } from 'nuxt/app';
+
 const id = useRoute().params.id;
 const data = ref<any>(null);
 const loading = ref(true);
 const error = ref<any>(null);
 const savingMarkup = ref(false);
 
+// [CORREÇÃO 1]: Inicializa com 1.0 (não-nulo e não-NaN)
 const fatorMultiplicador = ref(1.0); 
 
-// [FUNÇÕES UTILITÁRIAS INJETADAS PELO USUÁRIO NO ESCOPO CORRETO]
+// Funções utilitárias (mantidas)
+
 const extractComodo = (description: string): string | null => {
     const match = description.match(/^\[(.*?)\]/);
     return match ? match[1].trim() : null;
@@ -179,25 +184,31 @@ const totalBase = computed(() => {
 });
 
 const totalMarkupAcrescido = computed(() => {
-    return totalBase.value * (fatorMultiplicador.value - 1); 
+    // Garante que o cálculo usa pelo menos 1.0
+    const fator = fatorMultiplicador.value > 0 ? fatorMultiplicador.value : 1.0;
+    return totalBase.value * (fator - 1); 
 });
 
 const totalFinal = computed(() => {
     const finalFromData = parseFloat(data.value?.final_total || 0);
     if (finalFromData > 0) return finalFromData;
-
-    return totalBase.value * fatorMultiplicador.value;
+    
+    // Garante que o cálculo usa pelo menos 1.0
+    const fator = fatorMultiplicador.value > 0 ? fatorMultiplicador.value : 1.0;
+    return totalBase.value * fator;
 });
 
 
 const applyMarkup = async () => {
-    const fator = fatorMultiplicador.value;
-    const percentToSave = (fator - 1) * 100; 
-
-    if (fator < 1) {
-        alert('O Fator Multiplicador deve ser maior ou igual a 1 (1.00).');
-        return;
+    
+    // [CORREÇÃO 2]: Lógica robusta para tratar null, undefined, 0 ou NaN
+    let fator = fatorMultiplicador.value;
+    if (!fator || isNaN(fator) || fator < 1.0) {
+        fator = 1.0;
+        fatorMultiplicador.value = 1.0; // Atualiza o ref para refletir 1.0 no input
     }
+    
+    const percentToSave = (fator - 1) * 100; 
 
     if (!confirm(`Confirma aplicar o Fator Multiplicador de ${fator.toFixed(2)}x (Acréscimo de ${percentToSave.toFixed(2)}%)?`)) return;
     
@@ -228,7 +239,13 @@ const fetchData = async () => {
 
         if (data.value && data.value.markup_percent) {
             const percent = parseFloat(data.value.markup_percent);
-            fatorMultiplicador.value = 1 + (percent / 100); 
+            
+            // [CORREÇÃO 3]: Se o percentual for NaN (nulo/vazio no DB), usa 0%.
+            const validPercent = isNaN(percent) ? 0 : percent;
+            fatorMultiplicador.value = 1 + (validPercent / 100); 
+        } else {
+            // Se não houver markup salvo, garante que seja 1.0
+            fatorMultiplicador.value = 1.0;
         }
     } catch (e: any) {
         error.value = e.data || e; 
