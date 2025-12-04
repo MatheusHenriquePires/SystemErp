@@ -53,13 +53,14 @@ export default defineEventHandler(async (event) => {
   // Quando subir para o servidor real (com HTTPS), mude para 'true' ou use a variável de ambiente.
   const isProduction = process.env.NODE_ENV === 'production'
 
-  setCookie(event, 'usuario_sessao', token, {
+ setCookie(event, 'usuario_sessao', token, {
     httpOnly: true,
-    // ⚠️ MUDANÇA: Se estiver dando erro em localhost, deixe false fixo por enquanto
-    secure: false, // isProduction (Deixe false para testar agora)
+    // EM LOCALHOST (HTTP), ISTO PRECISA SER FALSE
+    // Se estiver 'process.env.NODE_ENV === ...', o navegador bloqueia o cookie
+    secure: false, 
     maxAge: 60 * 60 * 24 * 7,
     path: '/',
-    sameSite: 'lax' 
+    sameSite: 'lax'
   })
 
   // 6. Retorno limpo
