@@ -116,10 +116,9 @@ const markupPercent = ref(0);
 const itensAgrupados = computed(() => {
     if (!data.value || !data.value.itens) return {};
 
-    // Usa o reduce para iterar sobre a lista PLANA de itens e criar grupos
     return data.value.itens.reduce((groups, item) => {
-        // Usa o campo 'comodo' que agora vem da API. Se for nulo, agrupa em 'Geral'.
-        const comodoName = item.comodo || 'Geral'; 
+        // CORREÇÃO CRÍTICA: Força a string, remove espaços e só então usa 'Geral'.
+        const comodoName = String(item.comodo || '').trim() || 'Geral'; // <-- ESTA É A LINHA DO FIX
         
         if (!groups[comodoName]) {
             groups[comodoName] = { 
