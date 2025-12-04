@@ -1,5 +1,6 @@
 import { lerToken } from '~/server/utils/lerToken'
-import { sql } from '~/server/database' // Add the sql import
+import sql from '~/server/database'
+import { defineEventHandler, getCookie, getRouterParam, readBody, createError } from 'h3'
 
 export default defineEventHandler(async (event) => {
   const cookie = getCookie(event, 'usuario_sessao')
@@ -50,11 +51,11 @@ export default defineEventHandler(async (event) => {
     return { success: true, updated }
 
   } catch (error: any) {
-  console.error('ERRO REAL DO PATCH MARKUP:', error)
+    console.error('ERRO REAL DO PATCH MARKUP:', error)
 
-  throw createError({
-    statusCode: 500,
-    message: error.message || 'Erro interno ao salvar no banco'
-  })
-}
+    throw createError({
+      statusCode: 500,
+      message: error.message || 'Erro interno ao salvar no banco'
+    })
+  }
 })
