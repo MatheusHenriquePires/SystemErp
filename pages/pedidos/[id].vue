@@ -24,23 +24,39 @@
       <div v-else-if="!data" class="text-center text-red-500 py-10">Pedido não encontrado.</div>
       
       <div v-else class="space-y-6 text-slate-800">
-        
-        <header class="border-b-2 border-slate-800 pb-4 mb-4 flex justify-between items-start">
+
+        <div class="hidden print:flex justify-between items-center mb-8 border-b-2 border-gray-800 pb-6">
+            <div class="flex items-center gap-4">
+                <img src="/logo.png" alt="Logo" class="h-20 w-auto object-contain" onerror="this.style.display='none'"/>
+                
+                <div class="text-left">
+                    <h1 class="text-2xl font-black text-gray-900 uppercase">Sua Empresa Aqui</h1>
+                    <p class="text-sm text-gray-600">CNPJ: 00.000.000/0001-00</p>
+                    <p class="text-sm text-gray-600">contato@suaempresa.com.br</p>
+                    <p class="text-sm text-gray-600">(86) 9999-9999</p>
+                </div>
+            </div>
+            <div class="text-right self-end">
+                <p class="text-xs text-gray-400 uppercase font-bold">Documento Auxiliar</p>
+                <p class="text-sm font-medium text-gray-600">Emitido em {{ formatarData(new Date().toISOString()) }}</p>
+            </div>
+        </div>
+        <header class="pb-4 mb-4 flex justify-between items-start bg-gray-50 p-4 rounded border border-gray-200 print:bg-transparent print:border-none print:p-0">
           <div>
-            <h1 class="text-3xl font-extrabold uppercase tracking-wide text-slate-900">Orçamento</h1>
-            <p class="text-sm text-gray-500 mt-1">Nº #{{ data.id }}</p>
+            <h2 class="text-xl font-bold uppercase tracking-wide text-slate-800">Orçamento #{{ data.id }}</h2>
+            <p class="text-sm text-gray-500 mt-1">Status: <span class="font-bold">{{ data.status }}</span></p>
           </div>
           <div class="text-right">
              <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">Cliente</p>
              <p class="font-bold text-xl text-slate-900">{{ data.nome_cliente || 'Cliente' }}</p>
-             <p class="text-sm text-gray-600">{{ formatarData(data.data_criacao) }}</p>
+             <p class="text-sm text-gray-600">{{ data.cliente_telefone || '' }}</p>
           </div>
         </header>
 
         <section class="p-4 border border-yellow-200 rounded-lg bg-yellow-50 mb-6 flex justify-between items-center print:hidden">
             <div>
-                <h2 class="text-sm font-bold text-yellow-800 uppercase">Margem de Lucro / Markup</h2>
-                <p class="text-xs text-yellow-700">Multiplica o custo base para gerar o valor final.</p>
+                <h2 class="text-sm font-bold text-yellow-800 uppercase">Margem de Lucro</h2>
+                <p class="text-xs text-yellow-700">Edite o fator abaixo para alterar o valor final.</p>
             </div>
             <div class="flex items-center space-x-2 bg-white p-2 rounded border border-yellow-200 shadow-sm">
                 <span class="text-gray-500 font-bold text-sm">Fator:</span>
@@ -51,14 +67,13 @@
                     min="1.0" 
                     class="w-20 text-center font-bold text-lg text-blue-900 border-none focus:ring-0 bg-transparent outline-none"
                 />
-                <span class="text-gray-400 font-bold">x</span>
             </div>
         </section>
 
         <div v-for="(grupo, nomeComodo) in itensAgrupados" :key="nomeComodo" class="mb-8 break-inside-avoid">
             
-            <h3 class="bg-gray-100 text-slate-800 p-2 font-bold text-lg border-l-4 border-slate-800 mb-2 uppercase tracking-wide flex justify-between">
-                <span>{{ nomeComodo === 'PADRAO' ? 'Itens do Pedido' : nomeComodo }}</span>
+            <h3 class="bg-gray-100 print:bg-gray-200 text-slate-800 p-2 font-bold text-lg border-l-4 border-slate-800 mb-2 uppercase tracking-wide flex justify-between">
+                <span>{{ nomeComodo === 'PADRAO' ? 'Itens' : nomeComodo }}</span>
             </h3>
 
             <table class="w-full text-sm mb-2">
@@ -98,18 +113,6 @@
         <footer class="mt-10 pt-6 border-t-2 border-slate-800 break-inside-avoid">
           <div class="flex justify-end">
             <div class="w-full md:w-1/2 space-y-3">
-                
-                <div class="print:hidden space-y-1 text-sm text-gray-500 border-b pb-2 mb-2 text-right">
-                    <div class="flex justify-between">
-                        <span>Custo Base:</span>
-                        <span>{{ formatarMoeda(totalBase) }}</span>
-                    </div>
-                    <div class="flex justify-between text-yellow-700 font-medium">
-                        <span>Lucro ({{ ((fatorMultiplicador - 1) * 100).toFixed(0) }}%):</span>
-                        <span>+ {{ formatarMoeda(totalFinal - totalBase) }}</span>
-                    </div>
-                </div>
-
                 <div class="flex justify-between items-end mt-2">
                     <span class="text-lg font-bold text-slate-900 uppercase">Total Final</span>
                     <span class="text-3xl font-extrabold text-green-700">{{ formatarMoeda(totalFinal) }}</span>
@@ -119,6 +122,7 @@
           
           <div class="mt-12 text-center text-xs text-gray-400">
             <p>Orçamento válido por 10 dias.</p>
+            <p class="print:block hidden mt-1">Gerado digitalmente por NetMark ERP.</p>
           </div>
         </footer>
 
@@ -134,25 +138,20 @@ const id = route.params.id;
 const data = ref<any>(null);
 const loading = ref(true);
 const salvandoMargem = ref(false);
-const fatorMultiplicador = ref(1.0); // Margem inicial
+const fatorMultiplicador = ref(1.0);
 
-// --- CÁLCULOS E AGRUPAMENTO ---
-
+// --- CÁLCULOS ---
 const itensAgrupados = computed(() => {
     if (!data.value || !data.value.itens) return {};
-
     return data.value.itens.reduce((acc: any, item: any) => {
         let comodoKey = item.comodo;
         if (!comodoKey || comodoKey.trim() === '') comodoKey = 'PADRAO';
-
+        
         if (!acc[comodoKey]) acc[comodoKey] = { itens: [], subtotal: 0 };
-
-        // Subtotal base (sem markup)
+        
         const totalItemBase = (Number(item.quantidade) || 0) * (Number(item.preco_unitario) || 0);
-
         acc[comodoKey].itens.push(item);
         acc[comodoKey].subtotal += totalItemBase;
-
         return acc;
     }, {});
 });
@@ -164,30 +163,17 @@ const totalBase = computed(() => {
     }, 0);
 });
 
-const totalFinal = computed(() => {
-    return totalBase.value * fatorMultiplicador.value;
-});
+const totalFinal = computed(() => totalBase.value * fatorMultiplicador.value);
 
 // --- AÇÕES ---
-
 const salvarMargem = async () => {
     if (!confirm(`Atualizar o total para ${formatarMoeda(totalFinal.value)}?`)) return;
-    
     salvandoMargem.value = true;
     try {
-        await $fetch('/api/pedidos', {
-            method: 'PUT',
-            body: { 
-                id: id, 
-                valor_total: totalFinal.value 
-            }
-        });
-        alert('Margem salva com sucesso!');
-    } catch (e: any) {
-        alert('Erro ao salvar: ' + e.message);
-    } finally {
-        salvandoMargem.value = false;
-    }
+        await $fetch('/api/pedidos', { method: 'PUT', body: { id: id, valor_total: totalFinal.value } });
+        alert('Margem salva!');
+    } catch (e: any) { alert('Erro: ' + e.message); } 
+    finally { salvandoMargem.value = false; }
 };
 
 const imprimir = () => window.print();
@@ -207,25 +193,14 @@ const fetchData = async () => {
     try {
         const response: any = await $fetch(`/api/pedidos/${id}`);
         data.value = response;
-        
-        // RECUPERAR A MARGEM USADA ANTERIORMENTE
-        // Se o valor salvo no banco for maior que a soma dos custos, calculamos o fator reverso
         if (data.value && data.value.itens) {
             const custoTotal = data.value.itens.reduce((acc: number, item: any) => acc + (Number(item.quantidade) * Number(item.preco_unitario)), 0);
             const valorSalvo = Number(data.value.valor_total || 0);
-            
             if (custoTotal > 0 && valorSalvo > custoTotal) {
                 fatorMultiplicador.value = Number((valorSalvo / custoTotal).toFixed(2));
-            } else {
-                fatorMultiplicador.value = 1.0;
             }
         }
-
-    } catch (e) {
-        console.error("Erro ao carregar", e);
-    } finally {
-        loading.value = false;
-    }
+    } catch (e) { console.error(e); } finally { loading.value = false; }
 };
 
 onMounted(fetchData);
@@ -234,8 +209,10 @@ onMounted(fetchData);
 <style scoped>
 @media print {
   .print\:hidden { display: none !important; }
+  .print\:flex { display: flex !important; }
+  .print\:block { display: block !important; }
   .break-inside-avoid { break-inside: avoid; }
-  body { background: white; }
+  body { background: white; -webkit-print-color-adjust: exact; }
   .shadow-xl { box-shadow: none !important; }
 }
 </style>
