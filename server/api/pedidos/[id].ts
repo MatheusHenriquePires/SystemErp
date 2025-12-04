@@ -1,5 +1,5 @@
 // server/api/pedidos/[id].ts (FINAL: Usando Aspas Duplas para Forçar a Leitura)
-import sql from '~/server/database'
+import sql from '../../database'
 import { defineEventHandler, getRouterParam, createError, getCookie } from 'h3'
 import jwt from 'jsonwebtoken'
 
