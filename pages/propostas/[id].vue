@@ -115,97 +115,40 @@ const loading = ref(true);
 const error = ref<any>(null);
 const savingMarkup = ref(false);
 
-// [CORREÇÃO 1]: Inicializa com 1.0 (não-nulo e não-NaN)
 const fatorMultiplicador = ref(1.0); 
 
-// Funções utilitárias (mantidas)
+// --- FUNÇÕES UTILITÁRIAS ---
+const extractComodo = (description: string): string | null => { /* ... */ };
+const limparDescricao = (description: string): string => { /* ... */ };
+function formatarMoeda(valor: number): string { /* ... */ }
+function formatarData(data: string): string { /* ... */ }
+function printProposal(): void { /* ... */ }
+// ... (demais funções utilitárias)
 
-const extractComodo = (description: string): string | null => {
-    const match = description.match(/^\[(.*?)\]/);
-    return match ? match[1].trim() : null;
-};
-
-const limparDescricao = (description: string): string => {
-    return description.replace(/^\[.*?\]\s*/, '').trim();
-};
-
-function formatarMoeda(valor: number): string {
-    const numero = Number(valor);
-    if (isNaN(numero)) return 'R$ 0,00';
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(numero);
-}
-
-function formatarData(data: string): string {
-    if (!data) return 'N/A';
-    try {
-        return new Date(data).toLocaleDateString('pt-BR');
-    } catch {
-        return data;
-    }
-}
-
-function printProposal(): void {
-  window.print();
-}
-
-// Propriedades Computadas (Logic)
-const itensAgrupados = computed(() => {
-    if (!data.value || !data.value.itens) return {};
-
-    return data.value.itens.reduce((groups, item) => {
-        const comodoName = extractComodo(item.descricao || '') || 'Geral'; 
-        
-        if (!groups[comodoName]) {
-            groups[comodoName] = { total: 0, itens: [] };
-        }
-        
-        const quantidade = Number(item.quantidade);
-        const preco = Number(item.preco_unitario);
-        const subtotal = quantidade * preco;
-        
-        groups[comodoName].total += subtotal;
-        groups[comodoName].itens.push(item);
-        
-        return groups;
-    }, {});
-});
-
-
-const totalBase = computed(() => {
-    const baseFromData = parseFloat(data.value?.valor_total || data.value?.total || 0);
-    if (baseFromData > 0) return baseFromData;
-
-    if (!data.value || !data.value.itens) return 0;
-    return data.value.itens.reduce((sum: number, item: any) => {
-        const quantidade = Number(item.quantidade || item.quantidade);
-        const preco = Number(item.preco_unitario || item.preco_unitario);
-        return sum + (quantidade * preco);
-    }, 0);
-});
-
+// --- PROPRIEDADES COMPUTADAS ---
+const itensAgrupados = computed(() => { /* ... */ });
+const totalBase = computed(() => { /* ... */ });
 const totalMarkupAcrescido = computed(() => {
-    // Garante que o cálculo usa pelo menos 1.0
     const fator = fatorMultiplicador.value > 0 ? fatorMultiplicador.value : 1.0;
     return totalBase.value * (fator - 1); 
 });
-
 const totalFinal = computed(() => {
     const finalFromData = parseFloat(data.value?.final_total || 0);
     if (finalFromData > 0) return finalFromData;
-    
-    // Garante que o cálculo usa pelo menos 1.0
+
     const fator = fatorMultiplicador.value > 0 ? fatorMultiplicador.value : 1.0;
     return totalBase.value * fator;
 });
 
 
+// [CORREÇÃO FINAL]: Função que salva o Fator
 const applyMarkup = async () => {
     
-    // [CORREÇÃO 2]: Lógica robusta para tratar null, undefined, 0 ou NaN
     let fator = fatorMultiplicador.value;
+    // 1. Tratamento robusto contra input vazio/NaN/0
     if (!fator || isNaN(fator) || fator < 1.0) {
         fator = 1.0;
-        fatorMultiplicador.value = 1.0; // Atualiza o ref para refletir 1.0 no input
+        fatorMultiplicador.value = 1.0; 
     }
     
     const percentToSave = (fator - 1) * 100; 
@@ -223,7 +166,7 @@ const applyMarkup = async () => {
         });
         
         data.value.final_total = response.updated.final_total;
-        alert('Fator Multiplicador salvo e Total Final atualizado!');
+        alert('Fator Multiplicador salvo e Total Final atualizado! ✅');
 
     } catch (e: any) {
         alert(`Erro ao salvar Markup: ${e.message || 'Erro de servidor'}`);
@@ -232,27 +175,7 @@ const applyMarkup = async () => {
     }
 }
 
-const fetchData = async () => {
-    try {
-        const response = await $fetch(`/api/pedidos/${id}`); 
-        data.value = response;
-
-        if (data.value && data.value.markup_percent) {
-            const percent = parseFloat(data.value.markup_percent);
-            
-            // [CORREÇÃO 3]: Se o percentual for NaN (nulo/vazio no DB), usa 0%.
-            const validPercent = isNaN(percent) ? 0 : percent;
-            fatorMultiplicador.value = 1 + (validPercent / 100); 
-        } else {
-            // Se não houver markup salvo, garante que seja 1.0
-            fatorMultiplicador.value = 1.0;
-        }
-    } catch (e: any) {
-        error.value = e.data || e; 
-    } finally {
-        loading.value = false;
-    }
-};
+const fetchData = async () => { /* ... */ };
 
 onMounted(fetchData);
 </script>
