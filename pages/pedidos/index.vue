@@ -67,42 +67,43 @@
                 <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                   <div class="flex justify-center space-x-2">
 
-                    <NuxtLink
-                      v-if="pedido.status === 'ORCAMENTO'" 
-                      :to="`/propostas/${pedido.id}`"
-                      target="_blank"
-                      class="text-white bg-indigo-500 hover:bg-indigo-600 px-3 py-1 rounded shadow-sm transition"
-                      title="Visualizar Proposta (Formato Documento)"
-                    >
-                      📄 Proposta
-                    </NuxtLink>
-
                     <button 
-                      @click="abrirImpressao(pedido.id)"
-                      class="text-slate-600 bg-slate-200 hover:bg-slate-300 px-3 py-1 rounded shadow-sm transition"
-                      title="Imprimir Pedido"
+                        v-if="pedido.status === 'ORCAMENTO'" 
+                        @click="atualizarStatus(pedido.id, 'PROPOSTA')"
+                        class="text-white bg-purple-600 hover:bg-purple-700 px-3 py-1 rounded shadow-sm transition text-xs"
+                        title="Gerar Proposta e Enviar ao Cliente"
                     >
-                      🖨️
+                        ➡️ Gerar Proposta
                     </button>
 
-                    <button v-if="pedido.status === 'ORCAMENTO' || pedido.status === 'PENDENTE'" 
-                      @click="atualizarStatus(pedido.id, 'VENDA')"
-                      class="text-white bg-green-500 hover:bg-green-600 px-3 py-1 rounded shadow-sm transition"
-                      title="Aprovar e Virar Venda"
+                    <NuxtLink
+                        v-if="pedido.status === 'PROPOSTA'" 
+                        :to="`/propostas/${pedido.id}`"
+                        target="_blank"
+                        class="text-white bg-indigo-500 hover:bg-indigo-600 px-3 py-1 rounded shadow-sm transition text-xs"
+                        title="Visualizar Documento da Proposta"
                     >
-                      ✅ Aprovar
+                        📄 Proposta
+                    </NuxtLink>
+
+                    <button v-if="pedido.status === 'PROPOSTA' || pedido.status === 'PENDENTE'" 
+                        @click="atualizarStatus(pedido.id, 'VENDA')"
+                        class="text-white bg-green-500 hover:bg-green-600 px-3 py-1 rounded shadow-sm transition text-xs"
+                        title="Aprovar e Virar Venda"
+                    >
+                        ✅ Aprovar
                     </button>
 
                     <button v-if="pedido.status === 'VENDA'" 
-                      @click="atualizarStatus(pedido.id, 'PAGO')"
-                      class="text-white bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded shadow-sm transition"
-                      title="Lançar no Caixa"
+                        @click="atualizarStatus(pedido.id, 'PAGO')"
+                        class="text-white bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded shadow-sm transition text-xs"
+                        title="Lançar no Caixa"
                     >
-                      💰 Receber
+                        💰 Receber
                     </button>
                   </div>
                 </td>
-                </tr>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -119,21 +120,25 @@ const pedidos = ref([]);
 const loading = ref(true);
 const filtroAtual = ref('TODOS');
 
-// Abas de Navegação
+// [ALTERAÇÃO 3]: ADICIONANDO A NOVA ABA 'PROPOSTA'
 const abas = [
   { key: 'TODOS', label: 'Todos' },
   { key: 'ORCAMENTO', label: '📝 Orçamentos' },
+  { key: 'PROPOSTA', label: '📢 Propostas Enviadas' }, // NOVO!
   { key: 'VENDA', label: '📦 Vendas Abertas' },
   { key: 'PAGO', label: '✅ Finalizados' }
 ];
 
-// Cores das Badges
+// [ALTERAÇÃO 4]: NOVA COR PARA O STATUS PROPOSTA
 const classesStatus: Record<string, string> = {
   'ORCAMENTO': 'bg-yellow-100 text-yellow-800',
+  'PROPOSTA': 'bg-indigo-100 text-indigo-800', // NOVO!
   'VENDA': 'bg-blue-100 text-blue-800',
   'PAGO': 'bg-green-100 text-green-800',
   'PENDENTE': 'bg-gray-100 text-gray-800'
 };
+
+// ... restante das funções (carregarPedidos, mudarAba, atualizarStatus, etc. permanecem as mesmas)
 
 // Buscar Pedidos
 const carregarPedidos = async () => {
@@ -157,7 +162,10 @@ const mudarAba = (novoStatus: string) => {
 
 // Atualizar Status (PUT)
 const atualizarStatus = async (id: number, novoStatus: string) => {
-  const acao = novoStatus === 'VENDA' ? 'Aprovar Orçamento' : 'Confirmar Recebimento';
+  let acao = '';
+  if (novoStatus === 'PROPOSTA') acao = 'Gerar Proposta';
+  else if (novoStatus === 'VENDA') acao = 'Aprovar Orçamento';
+  else acao = 'Confirmar Recebimento';
   
   if (!confirm(`Tem certeza que deseja ${acao}?`)) return;
 
@@ -179,9 +187,8 @@ const atualizarStatus = async (id: number, novoStatus: string) => {
   }
 };
 
-// Função de Imprimir (EXISTENTE)
+// Função de Imprimir
 const abrirImpressao = (id: number) => {
-  // Abre a página de impressão em uma nova aba
   window.open(`/pedidos/imprimir/${id}`, '_blank');
 };
 
