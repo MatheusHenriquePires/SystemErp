@@ -1,7 +1,8 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
 
-const email = ref('admin@netmark.com') // Pré-preenchido para teste, pode limpar
+// Estado do formulário
+const email = ref('') 
 const senha = ref('')
 const erro = ref('')
 const carregando = ref(false)
@@ -11,23 +12,21 @@ async function handleLogin() {
     erro.value = ''
 
     try {
-        const { data, error } = await useFetch('/api/login', {
+        // ✅ Usamos $fetch para ações do usuário (POST/PUT/DELETE)
+        await $fetch('/api/login', {
             method: 'POST',
             body: { email: email.value, senha: senha.value }
         })
 
-        if (error.value) {
-            erro.value = error.value.data?.message || 'Erro ao entrar.'
-            return
-        }
+        // ✅ Se chegou aqui, deu sucesso (o $fetch joga erro no catch se falhar)
+        // O cookie HttpOnly já foi salvo automaticamente pelo navegador.
+        // Redirecionamos para a home ou dashboard.
+        await navigateTo('/')
 
-        if (data.value && data.value.success) {
-           window.location.href = '/'
-        }
-
-    } catch (e) {
-        erro.value = "Erro de conexão com o servidor."
-        console.error(e)
+    } catch (e: any) {
+        // ✅ Captura a mensagem amigável enviada pelo backend (createError)
+        erro.value = e.response?._data?.message || 'Erro ao conectar ao servidor.'
+        console.error('Erro de login:', e)
     } finally {
         carregando.value = false
     }
@@ -68,8 +67,9 @@ async function handleLogin() {
             >
           </div>
 
-          <div v-if="erro" class="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex items-center">
-            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <!-- Exibição de Erro -->
+          <div v-if="erro" class="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex items-center animate-pulse">
+            <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             {{ erro }}
           </div>
 
