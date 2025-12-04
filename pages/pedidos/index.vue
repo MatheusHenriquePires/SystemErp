@@ -64,33 +64,45 @@
                   </span>
                 </td>
 
-                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2">
-                  
-                  <button 
-                    @click="abrirImpressao(pedido.id)"
-                    class="text-slate-600 bg-slate-200 hover:bg-slate-300 px-3 py-1 rounded shadow-sm transition"
-                    title="Imprimir Pedido"
-                  >
-                     🖨️
-                  </button>
+                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                  <div class="flex justify-center space-x-2">
 
-                  <button v-if="pedido.status === 'ORCAMENTO' || pedido.status === 'PENDENTE'" 
-                    @click="atualizarStatus(pedido.id, 'VENDA')"
-                    class="text-white bg-green-500 hover:bg-green-600 px-3 py-1 rounded shadow-sm transition"
-                    title="Aprovar e Virar Venda"
-                  >
-                    ✅ Aprovar
-                  </button>
+                    <NuxtLink
+                      v-if="pedido.status === 'ORCAMENTO'" 
+                      :to="`/propostas/${pedido.id}`"
+                      target="_blank"
+                      class="text-white bg-indigo-500 hover:bg-indigo-600 px-3 py-1 rounded shadow-sm transition"
+                      title="Visualizar Proposta (Formato Documento)"
+                    >
+                      📄 Proposta
+                    </NuxtLink>
 
-                  <button v-if="pedido.status === 'VENDA'" 
-                    @click="atualizarStatus(pedido.id, 'PAGO')"
-                    class="text-white bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded shadow-sm transition"
-                    title="Lançar no Caixa"
-                  >
-                    💰 Receber
-                  </button>
+                    <button 
+                      @click="abrirImpressao(pedido.id)"
+                      class="text-slate-600 bg-slate-200 hover:bg-slate-300 px-3 py-1 rounded shadow-sm transition"
+                      title="Imprimir Pedido"
+                    >
+                      🖨️
+                    </button>
+
+                    <button v-if="pedido.status === 'ORCAMENTO' || pedido.status === 'PENDENTE'" 
+                      @click="atualizarStatus(pedido.id, 'VENDA')"
+                      class="text-white bg-green-500 hover:bg-green-600 px-3 py-1 rounded shadow-sm transition"
+                      title="Aprovar e Virar Venda"
+                    >
+                      ✅ Aprovar
+                    </button>
+
+                    <button v-if="pedido.status === 'VENDA'" 
+                      @click="atualizarStatus(pedido.id, 'PAGO')"
+                      class="text-white bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded shadow-sm transition"
+                      title="Lançar no Caixa"
+                    >
+                      💰 Receber
+                    </button>
+                  </div>
                 </td>
-              </tr>
+                </tr>
             </tbody>
           </table>
         </div>
@@ -167,7 +179,7 @@ const atualizarStatus = async (id: number, novoStatus: string) => {
   }
 };
 
-// Função de Imprimir (NOVA)
+// Função de Imprimir (EXISTENTE)
 const abrirImpressao = (id: number) => {
   // Abre a página de impressão em uma nova aba
   window.open(`/pedidos/imprimir/${id}`, '_blank');
