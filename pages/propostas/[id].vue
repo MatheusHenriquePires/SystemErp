@@ -6,7 +6,6 @@
         <NuxtLink to="/pedidos" class="text-gray-600 hover:text-blue-600">
           &larr; Voltar para Pedidos
         </NuxtLink>
-        
         <div class="flex space-x-2">
             <button 
                 @click="applyMarkup" 
@@ -16,7 +15,7 @@
                 {{ savingMarkup ? 'Salvando...' : 'Salvar Markup' }}
             </button>
             <button @click="printProposal" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-bold shadow-md transition">
-                🖨️ Imprimir
+                🖨️ Imprimir / Salvar PDF
             </button>
         </div>
       </div>
@@ -33,7 +32,9 @@
         <header class="border-b pb-4 mb-4 flex justify-between items-center">
           <div>
             <h1 class="text-2xl font-extrabold text-gray-800">PROPOSTA #{{ id }}</h1>
-            <p class="mt-1 text-sm text-gray-500">Data: {{ formatarData(data.data_criacao) }}</p>
+            <p class="mt-1 text-sm text-gray-500">
+              Data: {{ formatarData(data.data_criacao) }}
+            </p>
           </div>
           <div class="text-right">
              <p class="font-bold text-lg text-gray-900">{{ data.cliente_nome || 'ARBOREO' }}</p>
@@ -54,18 +55,25 @@
             </div>
         </section>
 
-        <section class="mb-6 border-b pb-4">
-          <h2 class="text-lg font-semibold mb-3">Itens Inclusos</h2>
-          <div class="space-y-4">
-            <div v-for="(item, index) in data.itens" :key="index" class="p-4 border rounded-lg bg-gray-50"> 
-              <h3 class="font-bold text-lg text-gray-800">{{ item.descricao || item.name }}</h3> 
-              <div class="text-sm text-gray-600 mt-1 space-y-1">
-                <p>Quantidade: {{ item.quantidade }}</p> 
-                <p>Preço Unitário: {{ formatarMoeda(item.preco_unitario) }}</p>
-                <p class="font-semibold text-gray-700">Subtotal: {{ formatarMoeda(Number(item.quantidade) * Number(item.preco_unitario)) }}</p>
-              </div>
+        <section class="mb-8">
+            <h2 class="text-lg font-semibold mb-4">Detalhamento dos Itens</h2>
+
+            <div v-for="(grupo, comodoNome) in itensAgrupados" :key="comodoNome" class="mb-8 border p-6 rounded-lg bg-gray-50">
+                <h3 class="font-extrabold text-xl mb-3 text-indigo-700 border-b pb-2">
+                    {{ comodoNome }}
+                </h3>
+
+                <ul class="space-y-2 text-sm text-gray-700">
+                    <li v-for="(item, index) in grupo.itens" :key="index" class="flex justify-between border-b border-dashed pb-1">
+                        <span class="w-3/5">{{ item.name || item.descricao }} ({{ item.quantity || item.quantidade }}x)</span>
+                        <span class="font-medium">{{ formatarMoeda((item.quantity || item.quantidade) * (item.unit_price || item.preco_unitario)) }}</span>
+                    </li>
+                </ul>
+
+                <div class="text-right mt-4 pt-2 border-t font-bold text-lg text-indigo-800">
+                    Total do Cômodo: {{ formatarMoeda(grupo.total) }}
+                </div>
             </div>
-          </div>
         </section>
 
         <footer class="pt-6 border-t mt-6">
@@ -74,15 +82,18 @@
 
               <div class="flex justify-between text-gray-700">
                 <span class="font-medium">Total Base dos Itens:</span>
-                <span class="font-medium">{{ formatarMoeda(totalBase) }}</span> </div>
+                <span class="font-medium">{{ formatarMoeda(totalBase) }}</span>
+              </div>
 
               <div v-if="markupPercent > 0" class="flex justify-between text-yellow-700 font-bold pt-1 border-t border-yellow-100">
                 <span class="text-sm">Markup ({{ markupPercent }}%):</span>
-                <span class="text-sm">+ {{ formatarMoeda(totalMarkupAcrescido) }}</span> </div>
+                <span class="text-sm">+ {{ formatarMoeda(totalMarkupAcrescido) }}</span>
+              </div>
               
               <div class="flex justify-between text-xl font-extrabold pt-4 border-t-2 border-blue-100">
                 <span class="text-blue-800">TOTAL FINAL:</span>
-                <span :class="{'text-red-600': totalFinal > totalBase}">{{ formatarMoeda(totalFinal) }}</span> </div>
+                <span :class="{'text-red-600': totalFinal > totalBase}">{{ formatarMoeda(totalFinal) }}</span>
+              </div>
 
             </div>
           </div>
@@ -100,34 +111,56 @@ const loading = ref(true);
 const error = ref<any>(null);
 const savingMarkup = ref(false);
 
-// [NOVO ESTADO]: Porcentagem de Acréscimo
 const markupPercent = ref(0); 
 
-// [NOVA COMPUTADA]: Calcula o total base (soma dos itens)
+// [NOVA COMPUTADA]: Agrupa os itens da API por Cômodo
+const itensAgrupados = computed(() => {
+    if (!data.value || !data.value.itens) return {};
+
+    return data.value.itens.reduce((groups, item) => {
+        const comodoName = item.comodo || 'Geral';
+        if (!groups[comodoName]) {
+            groups[comodoName] = { 
+                total: 0, 
+                itens: [] 
+            };
+        }
+        
+        const quantidade = Number(item.quantity || item.quantidade);
+        const preco = Number(item.unit_price || item.preco_unitario);
+        const subtotal = quantidade * preco;
+        
+        groups[comodoName].total += subtotal;
+        groups[comodoName].itens.push(item);
+        
+        return groups;
+    }, {});
+});
+
+
+// [COMPUTADA MANTIDA]: Calcula o total base (soma dos itens)
 const totalBase = computed(() => {
-    // Usa o valor_total/total do banco se existir, senão soma os itens (mais seguro para cálculos)
     const baseFromData = parseFloat(data.value?.valor_total || data.value?.total || 0);
     if (baseFromData > 0) return baseFromData;
 
     if (!data.value || !data.value.itens) return 0;
     return data.value.itens.reduce((sum: number, item: any) => {
-        const quantidade = Number(item.quantidade || item.quantity);
-        const preco = Number(item.preco_unitario || item.unit_price);
+        const quantidade = Number(item.quantidade || item.quantidade);
+        const preco = Number(item.unit_price || item.preco_unitario);
         return sum + (quantidade * preco);
     }, 0);
 });
 
-// [NOVA COMPUTADA]: Calcula o valor acrescido
+// [COMPUTADA MANTIDA]: Markups
 const totalMarkupAcrescido = computed(() => {
     return totalBase.value * (markupPercent.value / 100);
 });
-
-// [NOVA COMPUTADA]: Calcula o total final
 const totalFinal = computed(() => {
     return totalBase.value + totalMarkupAcrescido.value;
 });
 
-// [NOVA FUNÇÃO]: Aplica e Salva o Markup
+
+// [FUNÇÃO MANTIDA]: Aplica e Salva o Markup
 const applyMarkup = async () => {
     if (!confirm(`Confirma aplicar um acréscimo de ${markupPercent.value}% ao valor total?`)) return;
     
@@ -138,7 +171,7 @@ const applyMarkup = async () => {
             body: { markup_percent: markupPercent.value }
         });
         
-        // Atualiza a interface com os novos valores retornados pela API (final_total)
+        // Atualiza a interface
         data.value.final_total = response.updated.final_total;
         alert('Markup salvo e total final atualizado!');
 
