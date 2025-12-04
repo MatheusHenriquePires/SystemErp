@@ -114,19 +114,74 @@ const savingMarkup = ref(false);
 
 const fatorMultiplicador = ref(1.0); 
 
-// [FUNÇÕES UTILITÁRIAS MANTIDAS]
-function formatarMoeda(valor: number): string { /* ... */ }
-function formatarData(data: string): string { /* ... */ }
-function printProposal(): void { /* ... */ }
-const extractComodo = (description: string): string | null => { /* ... */ };
-const limparDescricao = (description: string): string => { /* ... */ };
+// [FUNÇÕES UTILITÁRIAS INJETADAS PELO USUÁRIO NO ESCOPO CORRETO]
+const extractComodo = (description: string): string | null => {
+    const match = description.match(/^\[(.*?)\]/);
+    return match ? match[1].trim() : null;
+};
 
-// [PROPRIEDADES COMPUTADAS MANTIDAS]
-const itensAgrupados = computed(() => { /* ... */ });
-const totalBase = computed(() => { /* ... */ });
+const limparDescricao = (description: string): string => {
+    return description.replace(/^\[.*?\]\s*/, '').trim();
+};
+
+function formatarMoeda(valor: number): string {
+    const numero = Number(valor);
+    if (isNaN(numero)) return 'R$ 0,00';
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(numero);
+}
+
+function formatarData(data: string): string {
+    if (!data) return 'N/A';
+    try {
+        return new Date(data).toLocaleDateString('pt-BR');
+    } catch {
+        return data;
+    }
+}
+
+function printProposal(): void {
+  window.print();
+}
+
+// Propriedades Computadas (Logic)
+const itensAgrupados = computed(() => {
+    if (!data.value || !data.value.itens) return {};
+
+    return data.value.itens.reduce((groups, item) => {
+        const comodoName = extractComodo(item.descricao || '') || 'Geral'; 
+        
+        if (!groups[comodoName]) {
+            groups[comodoName] = { total: 0, itens: [] };
+        }
+        
+        const quantidade = Number(item.quantidade);
+        const preco = Number(item.preco_unitario);
+        const subtotal = quantidade * preco;
+        
+        groups[comodoName].total += subtotal;
+        groups[comodoName].itens.push(item);
+        
+        return groups;
+    }, {});
+});
+
+
+const totalBase = computed(() => {
+    const baseFromData = parseFloat(data.value?.valor_total || data.value?.total || 0);
+    if (baseFromData > 0) return baseFromData;
+
+    if (!data.value || !data.value.itens) return 0;
+    return data.value.itens.reduce((sum: number, item: any) => {
+        const quantidade = Number(item.quantidade || item.quantidade);
+        const preco = Number(item.preco_unitario || item.preco_unitario);
+        return sum + (quantidade * preco);
+    }, 0);
+});
+
 const totalMarkupAcrescido = computed(() => {
     return totalBase.value * (fatorMultiplicador.value - 1); 
 });
+
 const totalFinal = computed(() => {
     const finalFromData = parseFloat(data.value?.final_total || 0);
     if (finalFromData > 0) return finalFromData;
@@ -135,15 +190,14 @@ const totalFinal = computed(() => {
 });
 
 
-// [CORREÇÃO AQUI]: Função que salva o Fator
 const applyMarkup = async () => {
-    // [CORREÇÃO] 1. Garante que o valor é pelo menos 1.0 se o input estiver vazio ou 0
-    if (fatorMultiplicador.value === null || fatorMultiplicador.value <= 1.0) {
-        fatorMultiplicador.value = 1.0; 
-    }
-    
     const fator = fatorMultiplicador.value;
     const percentToSave = (fator - 1) * 100; 
+
+    if (fator < 1) {
+        alert('O Fator Multiplicador deve ser maior ou igual a 1 (1.00).');
+        return;
+    }
 
     if (!confirm(`Confirma aplicar o Fator Multiplicador de ${fator.toFixed(2)}x (Acréscimo de ${percentToSave.toFixed(2)}%)?`)) return;
     
@@ -161,14 +215,12 @@ const applyMarkup = async () => {
         alert('Fator Multiplicador salvo e Total Final atualizado!');
 
     } catch (e: any) {
-        alert(`Erro ao salvar Fator Multiplicador: ${e.message || 'Erro de servidor'}`);
+        alert(`Erro ao salvar Markup: ${e.message || 'Erro de servidor'}`);
     } finally {
         savingMarkup.value = false;
     }
 }
 
-
-// [FUNÇÃO DE BUSCA MANTIDA]
 const fetchData = async () => {
     try {
         const response = await $fetch(`/api/pedidos/${id}`); 
