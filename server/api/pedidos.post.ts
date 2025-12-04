@@ -16,7 +16,8 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    // 1. Criação do Pedido (CORRIGIDO: Removido nome_cliente)
+    // 1. Criação do Pedido
+    // (Lembre-se: removemos nome_cliente daqui no passo anterior)
     const pedido = await sql`
       INSERT INTO pedidos (
         empresa_id, 
@@ -36,19 +37,24 @@ export default defineEventHandler(async (event) => {
     `
     const pedidoId = pedido[0].id
 
-    // 2. Inserção dos Itens
+    // 2. Inserção dos Itens (CORRIGIDO)
+    // Removidas as colunas 'medidas' e 'material' que não existem no banco
     for (const item of body.itens) {
       await sql`
         INSERT INTO pedidos_itens (
-            pedido_id, comodo, descricao, medidas, material, 
-            preco_custo, multiplicador, preco_venda
+            pedido_id, 
+            comodo, 
+            descricao, 
+            quantidade,     -- Certifique-se que sua tabela tem 'quantidade' (geralmente tem)
+            preco_custo, 
+            multiplicador, 
+            preco_venda
         )
         VALUES (
           ${pedidoId}, 
           ${item.comodo}, 
           ${item.descricao}, 
-          ${item.medidas || ''}, 
-          ${item.material || ''}, 
+          ${item.quantidade},
           ${item.preco_unitario}, 
           ${item.multiplicador || 1.0}, 
           ${item.preco_venda}
