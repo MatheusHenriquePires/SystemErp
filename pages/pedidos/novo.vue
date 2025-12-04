@@ -228,9 +228,18 @@ const submitOrcamento = async () => {
     submitting.value = true;
 
     // Transforma dados para o Backend
-    const itensParaSalvar = form.value.comodos.flatMap(grupo => {
+  const itensParaSalvar = form.value.comodos.flatMap(grupo => {
+        // 1. Limpa o nome do cômodo (remove quebras de linha e espaços extras)
+        let nomeComodo = (grupo.comodo || 'Geral').toString();
+        
+        // Remove caracteres especiais indesejados (como bullets • ou quebras de linha)
+        nomeComodo = nomeComodo.replace(/[\•\t\n\r]/g, '').trim(); 
+        
+        // Se ficou vazio depois de limpar, volta para Geral
+        if (!nomeComodo) nomeComodo = 'Geral';
+
         return grupo.produtos.map(produto => ({
-            comodo: grupo.comodo || 'Geral',
+            comodo: nomeComodo, // ✅ Usa o nome limpo
             descricao: produto.descricao,
             quantidade: produto.quantidade,
             preco_unitario: produto.preco_unitario,
@@ -238,6 +247,7 @@ const submitOrcamento = async () => {
             multiplicador: 1.0 
         }))
     });
+    console.log("Itens sendo enviados:", itensParaSalvar);
 
     try {
         const response: any = await $fetch('/api/pedidos', {
