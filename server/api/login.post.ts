@@ -6,7 +6,7 @@ import { defineEventHandler, readBody, setCookie, createError } from 'h3'
 const sql = postgres(process.env.DATABASE_URL as string)
 
 export default defineEventHandler(async (event) => {
-  // 1. Recebe os dados do formulário
+  // 1. Recebe os dados
   const body = await readBody(event)
 
   if (!body.email || !body.senha) {
@@ -16,18 +16,15 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // 2. Busca o usuário no banco
-  // Nota: Buscamos apenas pelo email primeiro para validar a senha via código depois (boa prática)
+  // 2. Busca usuário
   const usuarios = await sql`
     SELECT * FROM usuarios 
     WHERE email = ${body.email}
   `
-  
   const usuario = usuarios[0]
 
-  // 3. Verifica se usuário existe E se a senha bate
-  // ⚠️ ATENÇÃO: Estou mantendo a comparação direta para seu código funcionar agora.
-  // Futuramente, use bcrypt.compare(body.senha, usuario.senha)
+  // 3. Valida senha
+  // Nota: Em produção, use bcrypt.compare()
   if (!usuario || usuario.senha !== body.senha) {
     throw createError({
       statusCode: 401,
@@ -35,13 +32,12 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Validação extra de segurança
   if (!process.env.JWT_SECRET) {
-    console.error('ERRO CRÍTICO: JWT_SECRET não definido no .env')
+    console.error('ERRO: JWT_SECRET faltando no .env')
     throw createError({ statusCode: 500, message: 'Erro interno no servidor' })
   }
 
-  // 4. Cria o Token
+  // 4. Cria Token
   const token = jwt.sign(
     {
       id: usuario.id,
@@ -52,16 +48,21 @@ export default defineEventHandler(async (event) => {
     { expiresIn: '7d' }
   )
 
-  // 5. Salva no Cookie (Configuração Anti-Loop)
+  // ✅ 5. CORREÇÃO PRINCIPAL AQUI
+  // Forçamos 'secure: false' temporariamente para garantir que funcione em localhost
+  // Quando subir para o servidor real (com HTTPS), mude para 'true' ou use a variável de ambiente.
+  const isProduction = process.env.NODE_ENV === 'production'
+
   setCookie(event, 'usuario_sessao', token, {
-    httpOnly: true,                     // Invisível para o JS (Protege contra XSS)
-    secure: process.env.NODE_ENV === 'production', // HTTPS em prod, HTTP em dev
-    maxAge: 60 * 60 * 24 * 7,           // 7 dias em segundos
-    path: '/',                          // O cookie vale para o site todo
-    sameSite: 'lax'                     // ✅ CRUCIAL: Permite navegação normal sem bloquear o cookie
+    httpOnly: true,
+    // ⚠️ MUDANÇA: Se estiver dando erro em localhost, deixe false fixo por enquanto
+    secure: false, // isProduction (Deixe false para testar agora)
+    maxAge: 60 * 60 * 24 * 7,
+    path: '/',
+    sameSite: 'lax' 
   })
 
-  // 6. Remove a senha do objeto de retorno (Segurança no Front)
+  // 6. Retorno limpo
   const { senha, ...usuarioSemSenha } = usuario
 
   return { 
