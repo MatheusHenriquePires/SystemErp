@@ -1,4 +1,4 @@
-// server/api/pedidos/[id].ts (Busca de Detalhes do Pedido - ÚLTIMA TENTATIVA DE ORDEM)
+// server/api/pedidos/[id].ts (Código Final e Mais Simples)
 import sql from '~/server/database'
 import { defineEventHandler, getRouterParam, createError, getCookie } from 'h3'
 import jwt from 'jsonwebtoken'
@@ -7,8 +7,6 @@ function lerToken(token: string) { /* ... (função mantida) ... */ }
 
 export default defineEventHandler(async (event) => {
     // ... (Segurança mantida)
-    const cookie = getCookie(event, 'usuario_sessao')
-    // ...
 
     const id = getRouterParam(event, 'id')
     if (!id) throw createError({ statusCode: 400, message: 'ID do pedido é obrigatório.' });
@@ -16,10 +14,10 @@ export default defineEventHandler(async (event) => {
     try {
         // ... (Busca do Cabeçalho mantida)
 
-        // 4. Pega os Itens - [FINAL: COMODO É A PRIMEIRA COLUNA]
+        // 4. Pega os Itens - [FINAL: BUSCA DE COLUNAS SIMPLES]
         const itens = await sql`
             SELECT
-                comodo, -- FORÇADO COMO PRIMEIRA COLUNA
+                comodo, -- PRIMEIRO ITEM
                 descricao, 
                 quantidade, 
                 preco_unitario, 
@@ -27,14 +25,15 @@ export default defineEventHandler(async (event) => {
             FROM pedidos_itens
             WHERE pedido_id = ${id}
         `
-
-        // 5. Retorna
+        // ...
         return {
-            // ...dados,
+            ...dados,
             itens: itens
         }
 
     } catch (e: any) {
-        // ...
+        console.error("Erro ao buscar detalhes do pedido:", e);
+        if (e.statusCode === 404) throw e;
+        throw createError({ statusCode: 500, message: 'Erro interno ao buscar dados do pedido.' })
     }
 })
