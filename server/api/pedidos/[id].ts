@@ -1,4 +1,4 @@
-// server/api/pedidos/[id].ts (CORREÇÃO FINAL DE ALIAS)
+// server/api/pedidos/[id].ts (FINAL: Corrigindo a ordem da query)
 import sql from '~/server/database'
 import { defineEventHandler, getRouterParam, createError, getCookie } from 'h3'
 import jwt from 'jsonwebtoken'
@@ -32,11 +32,15 @@ export default defineEventHandler(async (event) => {
     try {
         // ... (Busca do Cabeçalho mantida)
 
-        // 4. Pega os Itens - [FINAL FIX: FORÇANDO ALIAS EXCLUSIVO PARA O COMODO]
+        // 4. Pega os Itens - [ULTIMA TENTATIVA: MUDANDO ORDEM E ADICIONANDO ALIAS PARA COMODO]
         const itens = await sql`
             SELECT
-                descricao, quantidade, preco_unitario, total_preco, comodo AS comodo_name -- NOVO ALIAS
-            FROM pedidos_itens 
+                descricao, 
+                quantidade, 
+                preco_unitario, 
+                comodo AS room_name, -- NOVO ALIAS E ORDEM ALTERADA
+                total_preco AS total_price_item -- Total do item com alias
+            FROM pedidos_itens
             WHERE pedido_id = ${id}
         `
 
