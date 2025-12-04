@@ -6,7 +6,6 @@ const sql = postgres(process.env.DATABASE_URL as string)
 const EXPLICIT_SECRET = 'minha_chave_secreta_para_teste_2025_42';
 
 function lerToken(token: string) {
-    // ... (função auxiliar mantida)
     try {
         const base64Url = token.split('.')[1];
         if (!base64Url) return null;
@@ -44,20 +43,20 @@ export default defineEventHandler(async (event) => {
         `
         const pedidoId = resultado[0].id
 
-        // [ALTERAÇÃO CRÍTICA]: 2. Inserir os Itens, Lendo a nova estrutura de Cômodos
+        // 2. Inserir os Itens, Lendo a nova estrutura de Cômodos
         if (body.comodos && body.comodos.length > 0) {
             for (const comodo of body.comodos) {
                 // Para cada item dentro do cômodo...
                 for (const item of comodo.produtos) {
                     await sql`
                         INSERT INTO pedidos_itens (
-                            pedido_id, descricao, quantidade, preco_unitario, comodo // <-- NOVA COLUNA
+                            pedido_id, descricao, quantidade, preco_unitario, comodo -- NOVA COLUNA
                         ) VALUES (
                             ${pedidoId}, 
                             ${item.descricao || 'Item sem nome'}, 
                             ${item.quantidade || 1}, 
                             ${item.preco_unitario || 0},
-                            ${comodo.comodo} // <-- O NOME DO CÔMODO
+                            ${comodo.comodo} -- O NOME DO CÔMODO
                         )
                     `
                 }
