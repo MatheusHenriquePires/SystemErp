@@ -1,45 +1,25 @@
-import sql from '~/server/database'
+import postgres from 'postgres'
+import jwt from 'jsonwebtoken'
 import { defineEventHandler, getCookie, createError } from 'h3'
 
-// Função auxiliar para decodificar o JWT (Payload)
-function lerToken(token: string) {
-    try {
-        const base64Url = token.split('.')[1]; // Pega a parte do meio
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const buffer = Buffer.from(base64, 'base64');
-        return JSON.parse(buffer.toString('utf-8'));
-    } catch (e) {
-        return null;
-    }
-}
+const sql = postgres(process.env.DATABASE_URL as string)
 
 export default defineEventHandler(async (event) => {
-    const cookie = getCookie(event, 'usuario_sessao')
+  const token = getCookie(event, 'usuario_sessao')
+  if (!token) throw createError({ statusCode: 401, message: 'Login necessário' })
+
+  try {
+    const user = jwt.verify(token, process.env.JWT_SECRET as string) as any
     
-    // 1. Validação básica
-    if (!cookie) throw createError({ statusCode: 401, message: 'Não autorizado' })
-
-    // 2. CORREÇÃO AQUI: Usamos a função lerToken ao invés de JSON.parse direto
-    const usuario = lerToken(cookie)
-
-    // Se o token estiver corrompido ou inválido
-    if (!usuario || !usuario.empresa_id) {
-        throw createError({ statusCode: 401, message: 'Sessão inválida' })
-    }
-
-    try {
-        const clientes = await sql`
-            SELECT id, nome, email, telefone, cidade
-            FROM clientes 
-            WHERE empresa_id = ${usuario.empresa_id} 
-               OR empresa_id IS NULL 
-            ORDER BY nome ASC
-            
-        `
-        return clientes
-
-    } catch (error) {
-        console.error("Erro ao buscar clientes:", error)
-        return []
-    }
+    // Busca clientes APENAS da empresa do usuário
+    const clientes = await sql`
+      SELECT * FROM clientes 
+      WHERE empresa_id = ${user.empresa_id} 
+      ORDER BY id DESC
+    `
+    return clientes
+    
+  } catch (e) {
+    return []
+  }
 })
