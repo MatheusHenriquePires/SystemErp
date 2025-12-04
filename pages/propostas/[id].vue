@@ -12,7 +12,7 @@
                 :disabled="savingMarkup"
                 class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold shadow-md transition disabled:opacity-50"
             >
-                {{ savingMarkup ? 'Salvando...' : 'Salvar Markup' }}
+                {{ savingMarkup ? 'Salvando Markup...' : 'Salvar Markup' }}
             </button>
             <button @click="printProposal" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-bold shadow-md transition">
                 🖨️ Imprimir / Salvar PDF
@@ -58,10 +58,9 @@
         <section class="mb-8">
             <h2 class="text-lg font-semibold mb-4">Detalhamento dos Itens</h2>
 
-            <div v-for="(grupo, comodoNome) in itensAgrupados" :key="comodoNome" class="mb-8 border p-6 rounded-lg bg-gray-50">
+            <div v-for="(grupo, comodoNome) in itensAgrupados" :key="comodoNome" class="mb-8 border p-6 rounded-lg bg-gray-50 print:break-inside-avoid">
                 <h3 class="font-extrabold text-xl mb-3 text-indigo-700 border-b pb-2">
-                    {{ comodoNome }}
-                </h3>
+                    {{ comodoNome }} </h3>
 
                 <ul class="space-y-2 text-sm text-gray-700">
                     <li v-for="(item, index) in grupo.itens" :key="index" class="flex justify-between border-b border-dashed pb-1">
@@ -113,12 +112,15 @@ const savingMarkup = ref(false);
 
 const markupPercent = ref(0); 
 
-// [NOVA COMPUTADA]: Agrupa os itens da API por Cômodo
+// [NOVA COMPUTADA]: Agrupa os itens da API por Cômodo para renderização
 const itensAgrupados = computed(() => {
     if (!data.value || !data.value.itens) return {};
 
+    // Usa o reduce para iterar sobre a lista PLANA de itens e criar grupos
     return data.value.itens.reduce((groups, item) => {
-        const comodoName = item.comodo || 'Geral';
+        // Usa o campo 'comodo' que agora vem da API. Se for nulo, agrupa em 'Geral'.
+        const comodoName = item.comodo || 'Geral'; 
+        
         if (!groups[comodoName]) {
             groups[comodoName] = { 
                 total: 0, 
@@ -140,6 +142,7 @@ const itensAgrupados = computed(() => {
 
 // [COMPUTADA MANTIDA]: Calcula o total base (soma dos itens)
 const totalBase = computed(() => {
+    // Tenta usar o valor_total/total do banco se existir, senão soma os itens (mais seguro para cálculos)
     const baseFromData = parseFloat(data.value?.valor_total || data.value?.total || 0);
     if (baseFromData > 0) return baseFromData;
 
@@ -156,6 +159,10 @@ const totalMarkupAcrescido = computed(() => {
     return totalBase.value * (markupPercent.value / 100);
 });
 const totalFinal = computed(() => {
+    // Se o banco já tiver final_total, use ele. Senão, calcule.
+    const finalFromData = parseFloat(data.value?.final_total || 0);
+    if (finalFromData > 0) return finalFromData;
+
     return totalBase.value + totalMarkupAcrescido.value;
 });
 
@@ -171,7 +178,7 @@ const applyMarkup = async () => {
             body: { markup_percent: markupPercent.value }
         });
         
-        // Atualiza a interface
+        // Atualiza a interface com os novos valores retornados pela API (final_total)
         data.value.final_total = response.updated.final_total;
         alert('Markup salvo e total final atualizado!');
 
@@ -225,11 +232,3 @@ useHead({
     title: `Proposta #${id} - ${data.value?.cliente_nome || 'Carregando...'}`,
 });
 </script>
-
-<style scoped>
-@media print {
-  .print\:hidden {
-    display: none !important;
-  }
-}
-</style>
