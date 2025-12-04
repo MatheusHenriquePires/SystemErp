@@ -1,7 +1,8 @@
 <template>
     <NuxtLayout name="dashboard-layout">
         
-        <ClientOnly> <div class="px-4 py-6 md:px-6 md:py-8 lg:px-8 max-w-4xl mx-auto">
+        <ClientOnly>
+            <div class="px-4 py-6 md:px-6 md:py-8 lg:px-8 max-w-4xl mx-auto">
                 
                 <div class="flex items-center mb-6">
                     <NuxtLink to="/pedidos" class="text-gray-600 hover:text-blue-600 mr-4">
@@ -16,9 +17,18 @@
                         <h2 class="text-xl font-semibold mb-4 text-gray-700">Dados Principais</h2>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700">Cliente ID</label>
-                                <input v-model.number="form.cliente_id" type="number" required 
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                                <label class="block text-sm font-medium text-gray-700">Cliente</label>
+                                <select v-model.number="form.cliente_id" required 
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    
+                                    <option disabled value="">
+                                      {{ loadingClientes ? 'Carregando clientes...' : 'Selecione um cliente...' }}
+                                    </option>
+                                    
+                                    <option v-for="cliente in clientes" :key="cliente.id" :value="cliente.id">
+                                        {{ cliente.nome }} (ID: {{ cliente.id }})
+                                    </option>
+                                </select>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Status Inicial</label>
@@ -85,14 +95,12 @@
                             {{ submitting ? 'Enviando...' : 'Salvar Orçamento' }}
                         </button>
                     </div>
-
                 </form>
             </div>
             
             <template #fallback>
                 <div class="text-center py-10 text-gray-600"> Preparando o formulário... </div>
             </template>
-
         </ClientOnly>
     </NuxtLayout>
 </template>
@@ -100,9 +108,12 @@
 <script setup lang="ts">
 const router = useRouter();
 const submitting = ref(false);
+// [NOVO ESTADO]
+const clientes = ref<any[]>([]);
+const loadingClientes = ref(true);
 
 const form = ref({
-    cliente_id: 1, // Valor inicial para teste
+    cliente_id: 0, // ID inicial 0 até ser populado
     status: 'ORCAMENTO',
     total: 0,
     comodos: [
@@ -110,18 +121,37 @@ const form = ref({
             comodo: 'Cozinha Planejada',
             produtos: [
                 { descricao: 'MDF Branco TX (15mm)', quantidade: 1, preco_unitario: 380.00 },
-                { descricao: 'Corrediça Telescópica', quantidade: 5, preco_unitario: 18.90 }
             ]
         }
     ]
 });
 
-// Funções de formatação e cálculo
+// [NOVA FUNÇÃO]: Busca clientes
+const fetchClientes = async () => {
+    loadingClientes.value = true;
+    try {
+        // Usa a API que você confirmou que já existe
+        const data = await $fetch('/api/clientes');
+        clientes.value = data || [];
+        // Define o ID inicial com o primeiro cliente, se existir
+        if (clientes.value.length > 0) {
+            form.value.cliente_id = clientes.value[0].id;
+        } else {
+             // Se não tiver clientes, garante que o campo não envie um valor inválido
+             form.value.cliente_id = 0; 
+        }
+    } catch (e) {
+        console.error("Erro ao carregar clientes:", e);
+    } finally {
+        loadingClientes.value = false;
+    }
+};
+
+// ... Funções de cálculo e formatação (mantidas)
 const formatarMoeda = (valor: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor || 0);
 };
 
-// [A função calcularTotalComodo foi mantida para a exibição do subtotal na tabela]
 const calcularTotalComodo = (comodo: any) => {
     return comodo.produtos.reduce((sum: number, item: any) => {
         const quantidade = Number(item.quantidade) || 0;
@@ -130,7 +160,6 @@ const calcularTotalComodo = (comodo: any) => {
     }, 0);
 };
 
-// [O cálculo geral integrado corrigido no passo anterior]
 const calcularTotalGeral = computed(() => {
     return form.value.comodos.reduce((sumGeral: number, comodo: any) => {
         const totalComodo = comodo.produtos.reduce((sum: number, item: any) => {
@@ -143,7 +172,7 @@ const calcularTotalGeral = computed(() => {
     }, 0);
 });
 
-// Funções de manipulação do formulário (permanecem as mesmas)
+// ... Funções de manipulação do formulário (mantidas)
 const adicionarComodo = () => {
     form.value.comodos.push({ comodo: '', produtos: [{ descricao: '', quantidade: 1, preco_unitario: 0 }] });
 };
@@ -161,11 +190,12 @@ const removerProduto = (indexComodo: number, indexProduto: number) => {
     }
 };
 
-// Envio do Formulário
+// Envio do Formulário (mantida)
 const submitOrcamento = async () => {
     form.value.total = calcularTotalGeral.value;
-    if (form.value.total <= 0) {
-        alert('O total do orçamento deve ser maior que zero.');
+
+    if (!form.value.cliente_id || form.value.total <= 0) {
+        alert('Obrigatório selecionar um cliente e o orçamento deve ser maior que zero.');
         return;
     }
 
@@ -186,4 +216,7 @@ const submitOrcamento = async () => {
         submitting.value = false;
     }
 };
+
+// [CHAMADA NOVA]: Buscar clientes ao montar
+onMounted(fetchClientes);
 </script>
