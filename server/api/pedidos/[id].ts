@@ -1,4 +1,4 @@
-// server/api/pedidos/[id].ts (Busca de Detalhes do Pedido - Corrigido o nome da tabela)
+// server/api/pedidos/[id].ts (Busca de Detalhes do Pedido - Final)
 import sql from '~/server/database'
 import { defineEventHandler, getRouterParam, createError, getCookie } from 'h3'
 import jwt from 'jsonwebtoken'
@@ -43,11 +43,11 @@ export default defineEventHandler(async (event) => {
 
         if (!dados) throw createError({ statusCode: 404, message: 'Pedido não encontrado.' })
 
-        // 4. Pega os Itens - [CORRIGIDO: USANDO TABELA ONDE 'comodo' EXISTE]
+        // 4. Pega os Itens - [CORREÇÃO FINAL: USANDO TABELA ONDE COMODO EXISTE]
         const itens = await sql`
             SELECT
                 descricao AS name, quantidade AS quantity, preco_unitario AS unit_price, total_preco AS total_price, comodo -- CAMPO COMODO INCLUSO
-            FROM pedidos_itens -- <--- TABELA CORRIGIDA
+            FROM pedidos_itens -- <--- USANDO O NOME DA TABELA ONDE INSERIMOS O COMODO
             WHERE pedido_id = ${id}
         `
 
