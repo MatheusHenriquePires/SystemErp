@@ -109,24 +109,39 @@ const form = ref({
     ]
 });
 
+// [ATENÇÃO]: Função auxiliar para cálculo (apenas para exibição)
+// Não deve ser usada dentro do computed!
+const calcularTotalComodo = (comodo: any) => {
+    return comodo.produtos.reduce((sum: number, item: any) => {
+        // Garantindo que a quantidade e o preço são numéricos, mesmo que 'v-model.number' falhe
+        const quantidade = Number(item.quantidade) || 0;
+        const preco = Number(item.preco_unitario) || 0;
+        return sum + (quantidade * preco);
+    }, 0);
+};
+
+
+// [CORREÇÃO CRÍTICA]: COMPUTED AGORA É SELF-CONTAINED
+const calcularTotalGeral = computed(() => {
+    return form.value.comodos.reduce((sumGeral: number, comodo: any) => {
+        // A lógica de cálculo do cômodo foi MOVIDA para dentro do computed,
+        // garantindo o contexto reativo.
+        const totalComodo = comodo.produtos.reduce((sum: number, item: any) => {
+            const quantidade = Number(item.quantidade) || 0;
+            const preco = Number(item.preco_unitario) || 0;
+            return sum + (quantidade * preco);
+        }, 0);
+
+        return sumGeral + totalComodo;
+    }, 0);
+});
+
 // Funções de formatação e cálculo
 const formatarMoeda = (valor: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor || 0);
 };
 
-const calcularTotalComodo = (comodo: any) => {
-    return comodo.produtos.reduce((sum: number, item: any) => {
-        return sum + (Number(item.quantidade) * Number(item.preco_unitario));
-    }, 0);
-};
-
-const calcularTotalGeral = computed(() => {
-    return form.value.comodos.reduce((sumGeral: number, comodo: any) => {
-        return sumGeral + calcularTotalComodo(comodo);
-    }, 0);
-});
-
-// Funções de manipulação do formulário
+// Funções de manipulação do formulário (permanecem as mesmas)
 const adicionarComodo = () => {
     form.value.comodos.push({ comodo: '', produtos: [{ descricao: '', quantidade: 1, preco_unitario: 0 }] });
 };
