@@ -54,7 +54,7 @@ export default defineEventHandler(async (event) => {
   const isProduction = process.env.NODE_ENV === 'production'
 
  setCookie(event, 'usuario_sessao', token, {
-    httpOnly: true,
+    httpOnly: false,
     // EM LOCALHOST (HTTP), ISTO PRECISA SER FALSE
     // Se estiver 'process.env.NODE_ENV === ...', o navegador bloqueia o cookie
     secure: false, 
