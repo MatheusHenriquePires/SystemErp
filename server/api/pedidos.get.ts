@@ -10,35 +10,37 @@ export default defineEventHandler(async (event) => {
 
   try {
     const user = jwt.verify(token, process.env.JWT_SECRET as string) as any
-    const query = getQuery(event) // Pega o ?status=... da URL
+    const query = getQuery(event)
     
-    // Filtro Dinâmico
+    // Filtro Dinâmico de Status
+    // Se status for 'TODOS' ou não vier, não filtra nada (traz tudo)
     let statusFilter = sql``
     if (query.status && query.status !== 'TODOS') {
-        // Filtra pelo status exato que vem do front (ex: 'Orçamento', 'VENDA')
         statusFilter = sql`AND p.status = ${query.status as string}`
     }
 
-    // Query Principal
+    // Busca pedidos + Nome do Vendedor (JOIN)
+    // COALESCE(u.nome, 'Sistema') garante que não quebre se não tiver usuário
     const pedidos = await sql`
       SELECT 
         p.*,
-        u.nome as vendedor_nome, -- Pega o nome do usuário que criou
+        COALESCE(u.nome, 'Sistema') as vendedor_nome,
         (
           SELECT json_agg(i) 
           FROM pedidos_itens i 
           WHERE i.pedido_id = p.id
         ) as itens
       FROM pedidos p
-      LEFT JOIN usuarios u ON p.usuario_id = u.id -- Relaciona com a tabela de usuários
+      LEFT JOIN usuarios u ON p.usuario_id = u.id 
       WHERE p.empresa_id = ${user.empresa_id} 
-      ${statusFilter} -- Aplica o filtro de status aqui
+      ${statusFilter} 
       ORDER BY p.id DESC
     `
     return pedidos
     
-  } catch (e) {
+  } catch (e: any) {
     console.error("Erro ao buscar pedidos:", e)
+    // Retorna array vazio em vez de erro 500 para não quebrar a tela
     return []
   }
 })

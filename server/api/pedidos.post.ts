@@ -8,7 +8,6 @@ export default defineEventHandler(async (event) => {
   const token = getCookie(event, 'usuario_sessao')
   if (!token) throw createError({ statusCode: 401, message: 'Login necessário' })
 
-  // Pega os dados do usuário logado
   const user = jwt.verify(token, process.env.JWT_SECRET as string) as any
   const body = await readBody(event)
 
@@ -17,12 +16,12 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    // ✅ 1. Cria o Pedido salvando o usuario_id
+    // 1. Cria o Pedido (Cabeçalho)
     const pedido = await sql`
       INSERT INTO pedidos (
         empresa_id, 
         cliente_id, 
-        usuario_id,  -- Nova coluna
+        usuario_id, 
         nome_cliente, 
         status, 
         valor_total
@@ -30,8 +29,8 @@ export default defineEventHandler(async (event) => {
       VALUES (
         ${user.empresa_id}, 
         ${body.cliente_id}, 
-        ${user.id},  -- Salva o ID de quem está logado
-        ${body.nome_cliente}, 
+        ${user.id}, 
+        ${body.nome_cliente || 'Cliente'}, 
         ${body.status || 'Orçamento'}, 
         ${body.valor_total}
       )
@@ -42,15 +41,18 @@ export default defineEventHandler(async (event) => {
     // 2. Insere os Itens
     for (const item of body.itens) {
       await sql`
-        INSERT INTO pedidos_itens (pedido_id, comodo, descricao, medidas, material, preco_custo, multiplicador, preco_venda)
+        INSERT INTO pedidos_itens (
+            pedido_id, comodo, descricao, medidas, material, 
+            preco_custo, multiplicador, preco_venda
+        )
         VALUES (
           ${pedidoId}, 
           ${item.comodo}, 
           ${item.descricao}, 
-          ${item.medidas}, 
-          ${item.material}, 
-          ${item.preco_custo}, 
-          ${item.multiplicador}, 
+          ${item.medidas || ''}, 
+          ${item.material || ''}, 
+          ${item.preco_unitario}, -- preco_custo
+          ${item.multiplicador || 1.0}, 
           ${item.preco_venda}
         )
       `
@@ -59,7 +61,7 @@ export default defineEventHandler(async (event) => {
     return { success: true, id: pedidoId }
 
   } catch (error) {
-    console.error(error)
-    throw createError({ statusCode: 500, message: 'Erro ao processar pedido' })
+    console.error("Erro ao criar pedido:", error)
+    throw createError({ statusCode: 500, message: 'Erro interno ao salvar pedido' })
   }
 })
