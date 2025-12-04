@@ -134,6 +134,7 @@ const itensAgrupados = computed(() => {
         groups[comodoName].total += subtotal;
         groups[comodoName].itens.push(item);
         
+        
         return groups;
     }, {});
 });
