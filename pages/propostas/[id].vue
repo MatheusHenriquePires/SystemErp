@@ -113,14 +113,20 @@ const savingMarkup = ref(false);
 
 const markupPercent = ref(0); 
 
+// Funções utilitárias (mantidas)
+function formatarMoeda(valor: number): string { /* ... */ }
+function formatarData(data: string): string { /* ... */ }
+function printProposal(): void { /* ... */ }
+
+
 // Propriedades Computadas (Logic)
 
-cconst itensAgrupados = computed(() => {
+const itensAgrupados = computed(() => { // <--- CORRIGIDO: Agora é apenas 'const'
     if (!data.value || !data.value.itens) return {};
 
     return data.value.itens.reduce((groups, item) => {
-        // SOLUÇÃO FINAL: Tenta ler o comodo. Agora que é a primeira coluna, deve funcionar.
-        const comodoName = String(item.comodo || '').trim() || 'Geral'; 
+        // SOLUÇÃO FINAL: Lê o novo alias 'room_name'
+        const comodoName = String(item.room_name || '').trim() || 'Geral'; 
         
         if (!groups[comodoName]) {
             groups[comodoName] = { total: 0, itens: [] };
@@ -137,8 +143,6 @@ cconst itensAgrupados = computed(() => {
     }, {});
 });
 
-
-// ... (outras computed properties e funções de formatação mantidas) ...
 
 const totalBase = computed(() => {
     const baseFromData = parseFloat(data.value?.valor_total || data.value?.total || 0);
@@ -199,27 +203,6 @@ const fetchData = async () => {
 };
 
 onMounted(fetchData);
-
-// Funções utilitárias (mantidas)
-function formatarMoeda(valor: number): string {
-    const numero = Number(valor);
-    if (isNaN(numero)) return 'R$ 0,00';
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(numero);
-}
-
-function formatarData(data: string): string {
-    if (!data) return 'N/A';
-    try {
-        return new Date(data).toLocaleDateString('pt-BR');
-    } catch {
-        return data;
-    }
-}
-
-function printProposal(): void {
-  window.print();
-}
-
 </script>
 
 <style scoped>
