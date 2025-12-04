@@ -115,12 +115,12 @@ const markupPercent = ref(0);
 
 // Propriedades Computadas (Logic)
 
-const itensAgrupados = computed(() => {
+cconst itensAgrupados = computed(() => {
     if (!data.value || !data.value.itens) return {};
 
     return data.value.itens.reduce((groups, item) => {
-        // SOLUÇÃO FINAL: Lê o novo alias 'room_name'
-        const comodoName = String(item.room_name || '').trim() || 'Geral'; 
+        // SOLUÇÃO FINAL: Tenta ler o comodo. Agora que é a primeira coluna, deve funcionar.
+        const comodoName = String(item.comodo || '').trim() || 'Geral'; 
         
         if (!groups[comodoName]) {
             groups[comodoName] = { total: 0, itens: [] };
