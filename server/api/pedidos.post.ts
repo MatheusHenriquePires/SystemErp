@@ -11,13 +11,13 @@ export default defineEventHandler(async (event) => {
   const user = jwt.verify(token, process.env.JWT_SECRET as string) as any
   const body = await readBody(event)
 
+  // Validação básica
   if (!body.cliente_id || !body.itens || body.itens.length === 0) {
     throw createError({ statusCode: 400, message: 'Pedido precisa de cliente e itens.' })
   }
 
   try {
-    // 1. Criação do Pedido
-    // (Lembre-se: removemos nome_cliente daqui no passo anterior)
+    // 1. Cria o cabeçalho do Pedido
     const pedido = await sql`
       INSERT INTO pedidos (
         empresa_id, 
@@ -37,27 +37,24 @@ export default defineEventHandler(async (event) => {
     `
     const pedidoId = pedido[0].id
 
-    // 2. Inserção dos Itens (CORRIGIDO)
-    // Removidas as colunas 'medidas' e 'material' que não existem no banco
+    // 2. Insere os Itens do Pedido
+    // ✅ CORREÇÃO: Usando APENAS as colunas que existem na sua tabela:
+    // id, pedido_id, descricao, quantidade, preco_unitario, comodo
     for (const item of body.itens) {
       await sql`
         INSERT INTO pedidos_itens (
             pedido_id, 
             comodo, 
             descricao, 
-            quantidade,     -- Certifique-se que sua tabela tem 'quantidade' (geralmente tem)
-            preco_custo, 
-            multiplicador, 
-            preco_venda
+            quantidade, 
+            preco_unitario
         )
         VALUES (
           ${pedidoId}, 
           ${item.comodo}, 
           ${item.descricao}, 
-          ${item.quantidade},
-          ${item.preco_unitario}, 
-          ${item.multiplicador || 1.0}, 
-          ${item.preco_venda}
+          ${item.quantidade}, 
+          ${item.preco_unitario}
         )
       `
     }
