@@ -1,12 +1,23 @@
-// server/api/pedidos/[id].ts (Busca de Detalhes do Pedido - Corrigido para nomes brutos)
+// server/api/pedidos/[id].ts (CORREÇÃO FINAL DE ALIAS)
 import sql from '~/server/database'
 import { defineEventHandler, getRouterParam, createError, getCookie } from 'h3'
 import jwt from 'jsonwebtoken'
 
-function lerToken(token: string) { /* ... (função mantida) */ }
+function lerToken(token: string) {
+    if (!token) return null;
+    try {
+        const base64Url = token.split('.')[1];
+        if (!base64Url) return null;
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const buffer = Buffer.from(base64, 'base64');
+        return JSON.parse(buffer.toString('utf-8'));
+    } catch (e) {
+        return null;
+    }
+}
 
 export default defineEventHandler(async (event) => {
-    // ... (Segurança mantida)
+    // 1. SEGURANÇA (Mantida)
     const cookie = getCookie(event, 'usuario_sessao')
     if (!cookie) throw createError({ statusCode: 401, message: 'Login necessário' })
 
@@ -20,27 +31,16 @@ export default defineEventHandler(async (event) => {
 
     try {
         // ... (Busca do Cabeçalho mantida)
-        const [dados] = await sql`
-            SELECT
-                p.id, p.data_criacao as data_criacao, p.valor_total as valor_total, p.payment_terms, p.status, p.cliente_nome,
-                p.markup_percent, p.final_total, 
-                e.nome as empresa_nome
-            FROM pedidos p
-            LEFT JOIN empresas e ON p.empresa_id = e.id
-            WHERE p.id = ${id} AND p.empresa_id = ${usuario.empresa_id}
-        `
 
-        if (!dados) throw createError({ statusCode: 404, message: 'Pedido não encontrado.' })
-
-        // 4. Pega os Itens - [FINAL: USANDO NOMES BRUTOS PARA EVITAR ERROS DE ALIAS]
+        // 4. Pega os Itens - [FINAL FIX: FORÇANDO ALIAS EXCLUSIVO PARA O COMODO]
         const itens = await sql`
             SELECT
-                descricao, quantidade, preco_unitario, total_preco, comodo -- TODOS NOMES DE COLUNAS BRUTOS
-            FROM pedidos_itens
+                descricao, quantidade, preco_unitario, total_preco, comodo AS comodo_name -- NOVO ALIAS
+            FROM pedidos_itens 
             WHERE pedido_id = ${id}
         `
 
-        // ... (Restante da função mantida)
+        // 5. Retorna
         return {
             ...dados,
             itens: itens

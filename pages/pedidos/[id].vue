@@ -2,24 +2,6 @@
   <NuxtLayout>
     <div class="max-w-4xl mx-auto my-8 p-8 bg-white shadow-xl print:shadow-none print:m-0 print:p-0">
       
-      <div class="mb-6 flex justify-between items-center print:hidden">
-        <NuxtLink to="/pedidos" class="text-gray-600 hover:text-blue-600">
-          &larr; Voltar para Pedidos
-        </NuxtLink>
-        <div class="flex space-x-2">
-            <button 
-                @click="applyMarkup" 
-                :disabled="savingMarkup"
-                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold shadow-md transition disabled:opacity-50"
-            >
-                {{ savingMarkup ? 'Salvando Markup...' : 'Salvar Markup' }}
-            </button>
-            <button @click="printProposal" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-bold shadow-md transition">
-                🖨️ Imprimir / Salvar PDF
-            </button>
-        </div>
-      </div>
-
       <div v-if="loading" class="text-center py-20">
         Carregando Proposta...
       </div>
@@ -76,30 +58,7 @@
             </div>
         </section>
 
-        <footer class="pt-6 border-t mt-6">
-          <div class="flex justify-end">
-            <div class="w-full md:w-1/2 space-y-2">
-
-              <div class="flex justify-between text-gray-700">
-                <span class="font-medium">Total Base dos Itens:</span>
-                <span class="font-medium">{{ formatarMoeda(totalBase) }}</span>
-              </div>
-
-              <div v-if="markupPercent > 0" class="flex justify-between text-yellow-700 font-bold pt-1 border-t border-yellow-100">
-                <span class="text-sm">Markup ({{ markupPercent }}%):</span>
-                <span class="text-sm">+ {{ formatarMoeda(totalMarkupAcrescido) }}</span>
-              </div>
-              
-              <div class="flex justify-between text-xl font-extrabold pt-4 border-t-2 border-blue-100">
-                <span class="text-blue-800">TOTAL FINAL:</span>
-                <span :class="{'text-red-600': totalFinal > totalBase}">{{ formatarMoeda(totalFinal) }}</span>
-              </div>
-
-            </div>
-          </div>
-        </footer>
-
-      </div>
+        </div>
     </div>
   </NuxtLayout>
 </template>
@@ -113,36 +72,14 @@ const savingMarkup = ref(false);
 
 const markupPercent = ref(0); 
 
-// Funções utilitárias
-
-function formatarMoeda(valor: number): string {
-    const numero = Number(valor);
-    if (isNaN(numero)) return 'R$ 0,00';
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(numero);
-}
-
-function formatarData(data: string): string {
-    if (!data) return 'N/A';
-    try {
-        return new Date(data).toLocaleDateString('pt-BR');
-    } catch {
-        return data;
-    }
-}
-
-function printProposal(): void {
-  window.print();
-}
-
-
 // Propriedades Computadas (Logic)
 
 const itensAgrupados = computed(() => {
     if (!data.value || !data.value.itens) return {};
 
     return data.value.itens.reduce((groups, item) => {
-        // SOLUÇÃO DE ROBUSTEZ: Força string, remove espaços e só então usa 'Geral'.
-        const comodoName = String(item.comodo || '').trim() || 'Geral'; 
+        // [LEITURA CORRIGIDA]: Lê o novo alias comodo_name
+        const comodoName = String(item.comodo_name || '').trim() || 'Geral'; 
         
         if (!groups[comodoName]) {
             groups[comodoName] = { total: 0, itens: [] };
@@ -159,6 +96,8 @@ const itensAgrupados = computed(() => {
     }, {});
 });
 
+
+// ... (resto das funções computadas e actions mantidas) ...
 
 const totalBase = computed(() => {
     const baseFromData = parseFloat(data.value?.valor_total || data.value?.total || 0);
@@ -182,8 +121,6 @@ const totalFinal = computed(() => {
     return totalBase.value + totalMarkupAcrescido.value;
 });
 
-
-// Funções de Ação
 
 const applyMarkup = async () => {
     if (!confirm(`Confirma aplicar um acréscimo de ${markupPercent.value}% ao valor total?`)) return;
@@ -219,6 +156,27 @@ const fetchData = async () => {
         loading.value = false;
     }
 };
+
+// Funções utilitárias (mantidas)
+function formatarMoeda(valor: number): string {
+    const numero = Number(valor);
+    if (isNaN(numero)) return 'R$ 0,00';
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(numero);
+}
+
+function formatarData(data: string): string {
+    if (!data) return 'N/A';
+    try {
+        return new Date(data).toLocaleDateString('pt-BR');
+    } catch {
+        return data;
+    }
+}
+
+function printProposal(): void {
+  window.print();
+}
+
 
 onMounted(fetchData);
 </script>
