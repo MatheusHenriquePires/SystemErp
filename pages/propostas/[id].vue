@@ -112,10 +112,9 @@ const loading = ref(true);
 const error = ref<any>(null);
 const savingMarkup = ref(false);
 
-const fatorMultiplicador = ref(1.0); 
+const markupPercent = ref(0); 
 
-// Funções utilitárias e lógica (mantida)
-
+// [FUNÇÕES UTILITÁRIAS AGORA DENTRO DO ESCOPO]
 const extractComodo = (description: string): string | null => {
     const match = description.match(/^\[(.*?)\]/);
     return match ? match[1].trim() : null;
@@ -125,6 +124,24 @@ const limparDescricao = (description: string): string => {
     return description.replace(/^\[.*?\]\s*/, '').trim();
 };
 
+function formatarMoeda(valor: number): string {
+    const numero = Number(valor);
+    if (isNaN(numero)) return 'R$ 0,00';
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(numero);
+}
+
+function formatarData(data: string): string {
+    if (!data) return 'N/A';
+    try {
+        return new Date(data).toLocaleDateString('pt-BR');
+    } catch {
+        return data;
+    }
+}
+
+function printProposal(): void {
+  window.print();
+}
 
 // Propriedades Computadas (Logic)
 const itensAgrupados = computed(() => {
@@ -162,43 +179,31 @@ const totalBase = computed(() => {
 });
 
 const totalMarkupAcrescido = computed(() => {
-    return totalBase.value * (fatorMultiplicador.value - 1); 
+    return totalBase.value * (markupPercent.value / 100);
 });
-
 const totalFinal = computed(() => {
     const finalFromData = parseFloat(data.value?.final_total || 0);
     if (finalFromData > 0) return finalFromData;
 
-    return totalBase.value * fatorMultiplicador.value;
+    return totalBase.value + totalMarkupAcrescido.value;
 });
 
 
 const applyMarkup = async () => {
-    const fator = fatorMultiplicador.value;
-    const percentToSave = (fator - 1) * 100; 
-
-    if (fator < 1) {
-        alert('O Fator Multiplicador deve ser maior ou igual a 1 (1.00).');
-        return;
-    }
-
-    if (!confirm(`Confirma aplicar o Fator Multiplicador de ${fator.toFixed(2)}x (Acréscimo de ${percentToSave.toFixed(2)}%)?`)) return;
+    if (!confirm(`Confirma aplicar um acréscimo de ${markupPercent.value}% ao valor total?`)) return;
     
     savingMarkup.value = true;
     try {
         const response = await $fetch(`/api/pedidos/${id}/markup`, {
             method: 'PATCH',
-            body: { 
-                markup_percent: percentToSave,
-                fator_multiplicador: fator 
-            }
+            body: { markup_percent: markupPercent.value }
         });
         
         data.value.final_total = response.updated.final_total;
-        alert('Fator Multiplicador salvo e Total Final atualizado!');
+        alert('Markup salvo e total final atualizado!');
 
     } catch (e: any) {
-        alert(`Erro ao salvar Fator Multiplicador: ${e.message || 'Erro de servidor'}`);
+        alert(`Erro ao salvar markup: ${e.message || 'Erro de servidor'}`);
     } finally {
         savingMarkup.value = false;
     }
@@ -210,8 +215,7 @@ const fetchData = async () => {
         data.value = response;
 
         if (data.value && data.value.markup_percent) {
-            const percent = parseFloat(data.value.markup_percent);
-            fatorMultiplicador.value = 1 + (percent / 100); 
+            markupPercent.value = parseFloat(data.value.markup_percent);
         }
     } catch (e: any) {
         error.value = e.data || e; 
