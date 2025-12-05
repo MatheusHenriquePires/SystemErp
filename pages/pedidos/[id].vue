@@ -52,9 +52,9 @@
 
         <header class="flex justify-between items-start border-b-2 border-slate-800 pb-6 mb-8">
             <div class="flex items-center gap-4">
-                <img src="/logo.png" alt="Logo" class="h-24 w-auto object-contain" onerror="this.style.display='none'"/>
+                <img src="/logo1.jpeg" alt="Logo" class="h-24 w-auto object-contain" onerror="this.style.display='none'"/>
                 <div>
-                    <h1 class="text-2xl font-black text-slate-900 uppercase tracking-tighter">NOME DA EMPRESA</h1>
+                    <h1 class="text-2xl font-black text-slate-900 uppercase tracking-tighter">Arbóreo</h1>
                     <p class="text-sm text-gray-500">Soluções em Ambientes Planejados</p>
                 </div>
             </div>
