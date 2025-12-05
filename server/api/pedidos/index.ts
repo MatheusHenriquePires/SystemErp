@@ -28,10 +28,7 @@ export default defineEventHandler(async (event) => {
         ${statusFiltro && statusFiltro !== 'TODOS' ? sql`AND p.status = ${statusFiltro}` : sql``}
         ORDER BY p.updated_at DESC NULLS LAST, p.id DESC
       `
-    } catch (error) {
-      console.error(error)
-      return []
-    }
+    } catch (error) { return [] }
   }
 
   // --- PUT: Atualizar Status ---
@@ -51,21 +48,19 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // --- POST: CRIAR PEDIDO E BAIXAR ESTOQUE (NOVO!) ---
+  // --- POST: SALVAR ORÇAMENTO TÉCNICO (Texto Livre) ---
   if (method === 'POST') {
     const body = await readBody(event)
     
     if (!body.cliente_id) throw createError({ statusCode: 400, message: 'Cliente obrigatório' })
-    if (!body.itens || body.itens.length === 0) throw createError({ statusCode: 400, message: 'Adicione produtos' })
+    if (!body.itens || body.itens.length === 0) throw createError({ statusCode: 400, message: 'Adicione itens' })
 
     try {
-        // Usamos transação (.begin) para garantir segurança: 
-        // ou salva tudo (pedido + itens + estoque) ou não salva nada se der erro.
         const resultado = await sql.begin(async sql => {
             
-            // 1. Busca nome do cliente para histórico
+            // 1. Busca nome do cliente
             const [cli] = await sql`SELECT nome FROM clientes WHERE id = ${body.cliente_id}`
-            const nomeCliente = cli?.nome || 'Consumidor Final'
+            const nomeCliente = cli?.nome || 'Cliente'
 
             // 2. Cria o Pedido
             const [pedido] = await sql`
@@ -79,25 +74,32 @@ export default defineEventHandler(async (event) => {
                 RETURNING id
             `
 
-            // 3. Processa cada Item
+            // 3. Salva Itens (Versão Texto Livre)
+            // Aqui assumimos que a tabela pode não ter colunas 'comodo/marca' ainda,
+            // então vamos salvar o essencial ou ajustar se você rodou o SQL certo.
             for (const item of body.itens) {
-                // Salva o item ligado ao pedido
+                
+                // Tenta salvar com as colunas extras de orçamento técnico
+                // Se der erro de coluna não existente, você precisa rodar o SQL abaixo do código.
                 await sql`
                     INSERT INTO itens_pedido (
-                        pedido_id, produto_id, quantidade, preco_unitario, subtotal
+                        pedido_id, 
+                        descricao, -- Nome do material
+                        quantidade, 
+                        preco_unitario, 
+                        subtotal,
+                        comodo,    -- Ex: Cozinha
+                        marca      -- Ex: Arauco
                     ) VALUES (
-                        ${pedido.id}, ${item.id}, ${item.quantidade}, ${item.preco}, ${item.total}
+                        ${pedido.id}, 
+                        ${item.descricao || item.material}, -- Frontend manda 'descricao' ou 'material'
+                        ${item.quantidade}, 
+                        ${item.preco_unitario}, 
+                        ${item.subtotal},
+                        ${item.comodo || null},
+                        ${item.marca || null}
                     )
                 `
-
-                // BAIXA DE ESTOQUE (Se o produto tiver ID)
-                if (item.id) {
-                    await sql`
-                        UPDATE produtos 
-                        SET estoque_atual = estoque_atual - ${item.quantidade}
-                        WHERE id = ${item.id}
-                    `
-                }
             }
             return pedido
         })
@@ -106,7 +108,7 @@ export default defineEventHandler(async (event) => {
 
     } catch (error: any) {
         console.error('Erro no POST pedido:', error)
-        throw createError({ statusCode: 500, message: 'Erro ao processar venda.' })
+        throw createError({ statusCode: 500, message: 'Erro ao salvar orçamento.' })
     }
   }
 })
