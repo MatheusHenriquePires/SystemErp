@@ -45,12 +45,11 @@
         
         <header class="flex justify-between items-start border-b-2 border-slate-800 pb-6 mb-8">
             <div class="flex items-center gap-4">
-                <div class="flex items-center gap-2">
-                    <svg class="w-12 h-12 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                    <div>
-                        <h1 class="text-2xl font-black text-slate-900 uppercase tracking-tighter">Arbóreo</h1>
-                        <p class="text-xs font-bold text-gray-500 tracking-widest uppercase">Ambientes Planejados</p>
-                    </div>
+                <img src="/logo.png" alt="Logo" class="h-24 w-auto object-contain" />
+                
+                <div>
+                    <h1 class="text-2xl font-black text-slate-900 uppercase tracking-tighter">Arbóreo</h1>
+                    <p class="text-sm text-gray-500">Soluções em Ambientes Planejados</p>
                 </div>
             </div>
             <div class="text-right">
@@ -247,7 +246,6 @@
 const route = useRoute();
 const id = route.params.id;
 
-// --- LISTA DE PAGAMENTOS ---
 const opcoesPagamento = [
     { label: 'Pix', value: 'PIX' },
     { label: 'Cartão de Crédito', value: 'CARTAO_CREDITO' },
@@ -259,7 +257,6 @@ const opcoesPagamento = [
     { label: 'Nota Promissória', value: 'PROMISSORIA' }
 ];
 
-// Estados Gerais
 const data = ref<any>(null);
 const loading = ref(true);
 const salvando = ref(false);
@@ -269,7 +266,6 @@ const modoCorteUnico = ref(false);
 const fatorMultiplicador = ref(1.0);
 const descricoesBlocos = ref<Record<string, string>>({});
 
-// Estados Financeiros
 const mostrarModalFin = ref(false);
 const fin = ref({
     entrada: 0,
@@ -279,7 +275,6 @@ const fin = ref({
     dataInicio: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0]
 });
 
-// Computed Helpers
 const totalBase = computed(() => {
     if (!data.value || !data.value.itens) return 0;
     return data.value.itens.reduce((acc: number, i: any) => acc + ((Number(i.quantidade)||0)*(Number(i.preco_unitario)||0)), 0);
@@ -287,9 +282,8 @@ const totalBase = computed(() => {
 const totalFinal = computed(() => totalBase.value * fatorMultiplicador.value);
 const restante = computed(() => Math.max(0, totalFinal.value - fin.value.entrada));
 
-// --- AÇÕES FINANCEIRAS ---
 const abrirModalFinanceiro = () => {
-    fin.value.entrada = totalFinal.value * 0.4; // Sugere 40% de entrada
+    fin.value.entrada = totalFinal.value * 0.4;
     mostrarModalFin.value = true;
 };
 
@@ -313,12 +307,11 @@ const confirmarFechamento = async () => {
         });
         alert('Venda confirmada com sucesso! 🚀');
         mostrarModalFin.value = false;
-        fetchData(); // Recarrega os dados (pode atualizar status)
+        fetchData();
     } catch (e: any) { alert('Erro: ' + e.message); } 
     finally { salvando.value = false; }
 };
 
-// --- DEMAIS FUNÇÕES (Mantidas do original) ---
 const gerarPDF = async () => {
     modoCliente.value = true;
     modoCorteUnico.value = false;
