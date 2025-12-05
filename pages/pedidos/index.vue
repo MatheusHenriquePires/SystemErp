@@ -30,8 +30,11 @@
               <tr>
                 <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">ID</th>
                 <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Cliente</th>
+                
+                <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Responsável</th>
+                
                 <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Última Edição</th>
-                <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Data</th>
+                
                 <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Total</th>
                 <th class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
                 <th class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Ações</th>
@@ -47,7 +50,6 @@
                 <td colspan="7" class="p-12 text-center text-gray-500">
                   <div class="flex flex-col items-center justify-center">
                     <p class="text-lg font-medium text-gray-900">Nenhum pedido encontrado</p>
-                    <p class="text-sm text-gray-500">Não há registros na aba "{{ abas.find(a => a.key === filtroAtual)?.label }}".</p>
                   </div>
                 </td>
               </tr>
@@ -60,23 +62,27 @@
                 </td>
 
                 <td class="px-6 py-4 text-sm text-gray-500">
-                    <div class="flex flex-col">
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs font-bold px-2 py-0.5 rounded bg-gray-100 text-gray-600">
-                                {{ pedido.atualizador_nome ? 'Editado por' : 'Criado por' }}
-                            </span>
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 uppercase">
+                            {{ (pedido.vendedor_nome || 'S')[0] }}
                         </div>
-                        <span class="font-medium text-gray-800 mt-1">
-                            {{ pedido.atualizador_nome || pedido.vendedor_nome || 'Sistema' }}
-                        </span>
-                        <span v-if="pedido.updated_at" class="text-xs text-gray-400">
-                            {{ new Date(pedido.updated_at).toLocaleDateString('pt-BR') }}
-                        </span>
+                        <span class="truncate max-w-[150px] font-medium">{{ pedido.vendedor_nome || 'Sistema' }}</span>
                     </div>
                 </td>
 
-                <td class="px-6 py-4 text-sm text-gray-500">
-                  {{ new Date(pedido.data_criacao).toLocaleDateString('pt-BR') }}
+                <td class="px-6 py-4 text-sm">
+                    <div v-if="pedido.editor_nome" class="flex flex-col">
+                        <div class="flex items-center gap-1 text-xs text-gray-500">
+                           <span>✏️ Editado por:</span>
+                        </div>
+                        <span class="font-bold text-gray-800 text-xs mt-0.5">
+                            {{ pedido.editor_nome.split(' ')[0] }}
+                        </span>
+                        <span class="text-[10px] text-gray-400">
+                            {{ formatarDataHora(pedido.updated_at) }}
+                        </span>
+                    </div>
+                    <span v-else class="text-xs text-gray-300 italic">-</span>
                 </td>
                 
                 <td class="px-6 py-4 text-sm font-bold text-gray-900 text-right">
@@ -94,54 +100,49 @@
 
                 <td class="px-6 py-4 text-center text-sm">
                   <div class="flex justify-center items-center space-x-2">
-                    
                     <button 
                       v-if="['Orçamento', 'ORCAMENTO'].includes(pedido.status)" 
                       @click="atualizarStatus(pedido.id, 'PROPOSTA')"
-                      class="text-white bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded-md text-xs font-medium shadow-sm transition flex items-center gap-1"
+                      class="text-white bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded-md text-xs font-medium shadow-sm transition"
                       title="Mover para Proposta"
                     >
-                      ➡️ <span class="hidden xl:inline">Enviar</span>
+                      ➡️ Enviar
                     </button>
 
                     <button 
                       v-if="['PROPOSTA', 'PENDENTE'].includes(pedido.status)" 
                       @click="atualizarStatus(pedido.id, 'VENDA')"
-                      class="text-white bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-md text-xs font-medium shadow-sm transition flex items-center gap-1"
+                      class="text-white bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-md text-xs font-medium shadow-sm transition"
                       title="Aprovar Venda"
                     >
-                      ✅ <span class="hidden xl:inline">Aprovar</span>
+                      ✅ Aprovar
                     </button>
 
                     <button 
                       v-if="['VENDA', 'Produção'].includes(pedido.status)" 
                       @click="atualizarStatus(pedido.id, 'PAGO')"
-                      class="text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-md text-xs font-medium shadow-sm transition flex items-center gap-1"
+                      class="text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-md text-xs font-medium shadow-sm transition"
                       title="Marcar como Pago"
                     >
-                      💰 <span class="hidden xl:inline">Receber</span>
+                      💰 Receber
                     </button>
 
                     <NuxtLink 
                       :to="`/pedidos/${pedido.id}`"
-                      class="text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 px-3 py-1.5 rounded-md text-xs font-medium shadow-sm flex items-center gap-1 transition"
-                      title="Ver Detalhes"
+                      class="text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 px-2 py-1.5 rounded-md text-xs font-medium shadow-sm transition"
                     >
                       👁️
                     </NuxtLink>
 
                     <button 
                       @click="excluirPedido(pedido.id)"
-                      class="text-red-500 bg-white border border-red-200 hover:bg-red-50 px-2 py-1.5 rounded-md text-xs font-medium shadow-sm flex items-center justify-center transition"
-                      title="Excluir Pedido"
+                      class="text-red-500 bg-white border border-red-200 hover:bg-red-50 px-2 py-1.5 rounded-md text-xs font-medium shadow-sm transition"
                     >
                       🗑️
                     </button>
-
                   </div>
                 </td>
               </tr>
-
             </tbody>
           </table>
         </div>
@@ -195,29 +196,33 @@ const mudarAba = (novoStatus: string) => {
 const atualizarStatus = async (id: number, novoStatus: string) => {
   if(!confirm(`Deseja alterar o status para ${novoStatus}?`)) return;
   try {
-    // Aqui vai disparar o PUT que salva o usuário atual
+    // Isso vai acionar o PUT, que salva o ID de quem clicou no botão
     await $fetch('/api/pedidos', { method: 'PUT', body: { id, status: novoStatus } });
     await carregarPedidos();
   } catch (e) { alert('Erro ao atualizar status.'); }
 };
 
 const excluirPedido = async (id: number) => {
-    if (!confirm('ATENÇÃO: Tem certeza que deseja EXCLUIR este pedido?\nIsso apagará também os itens e o financeiro dele.')) return;
-
+    if (!confirm('ATENÇÃO: Tem certeza que deseja EXCLUIR este pedido?')) return;
     try {
         await $fetch(`/api/pedidos/${id}`, { method: 'DELETE' });
         pedidos.value = pedidos.value.filter((p: any) => p.id !== id);
     } catch (e: any) {
-        const msg = e.data?.statusMessage || e.message || 'Erro desconhecido';
-        alert('Erro ao excluir: ' + msg);
+        alert('Erro ao excluir: ' + (e.data?.statusMessage || 'Erro desconhecido'));
     }
 };
 
 const formatarMoeda = (val: any) => {
   const numero = Number(val);
-  const valorSeguro = isNaN(numero) ? 0 : numero;
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valorSeguro);
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(isNaN(numero) ? 0 : numero);
 };
+
+const formatarDataHora = (dataString: string) => {
+    if(!dataString) return '';
+    const data = new Date(dataString);
+    // Ex: 05/12 14:30
+    return `${data.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'})} às ${data.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}`;
+}
 
 onMounted(carregarPedidos);
 useHead({ title: 'Gestão de Pedidos' });
