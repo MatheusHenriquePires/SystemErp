@@ -1,4 +1,8 @@
-// NENHUM IMPORT AQUI. O Nuxt carrega o 'sql' de server/utils automaticamente.
+// 1. Importamos manualmente as funções do servidor para evitar o erro "is not defined"
+import { defineEventHandler, createError } from 'h3';
+
+// Nota: O 'sql' deve vir automaticamente de server/utils. 
+// Se der erro de 'sql is not defined' no próximo teste, avise que ajustamos a importação dele.
 
 export default defineEventHandler(async (event) => {
   const id = event.context.params.id;
@@ -12,7 +16,7 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    // O objeto 'sql' estará disponível magicamente aqui
+    // Tenta deletar
     const [pedidoDeletado] = await sql`
       DELETE FROM pedidos
       WHERE id = ${id}
@@ -32,10 +36,13 @@ export default defineEventHandler(async (event) => {
     };
 
   } catch (error) {
+    // Se o erro for da nossa validação (400/404), repassa
     if (error.statusCode) {
       throw error;
     }
+
     console.error('Erro ao deletar pedido:', error);
+    
     throw createError({
       statusCode: 500,
       statusMessage: 'Erro interno ao tentar deletar o pedido.',
