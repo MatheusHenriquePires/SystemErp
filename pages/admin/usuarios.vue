@@ -15,7 +15,7 @@
             <tr>
               <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Nome</th>
               <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Email</th>
-              <th class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase">Cargo</th>
+              <th class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase">Função (Role)</th>
               <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase">Ações</th>
             </tr>
           </thead>
@@ -24,19 +24,19 @@
               <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ user.nome }}</td>
               <td class="px-6 py-4 text-sm text-gray-500">{{ user.email }}</td>
               <td class="px-6 py-4 text-center">
-                <span :class="`px-2 py-1 text-xs font-bold rounded-full ${user.cargo === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`">
-                  {{ user.cargo === 'admin' ? 'Administrador' : 'Vendedor' }}
+                <span :class="`px-2 py-1 text-xs font-bold rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`">
+                  {{ user.role === 'admin' ? 'Administrador' : 'Vendedor' }}
                 </span>
               </td>
               <td class="px-6 py-4 text-right text-sm">
-                <button class="text-gray-400 hover:text-red-600 font-bold" title="Excluir (Em breve)">🗑️</button>
+                <button class="text-gray-400 hover:text-red-600 font-bold" title="Excluir">🗑️</button>
               </td>
             </tr>
           </tbody>
         </table>
         
         <div v-if="usuarios.length === 0" class="p-8 text-center text-gray-500">
-            Nenhum usuário encontrado além de você.
+            Carregando usuários ou nenhum encontrado...
         </div>
       </div>
 
@@ -55,7 +55,7 @@
 
             <div>
               <label class="block text-sm font-medium text-gray-700">E-mail de Acesso</label>
-              <input v-model="form.email" type="email" required class="w-full border rounded-md p-2 mt-1" placeholder="joao@empresa.com">
+              <input v-model="form.email" type="email" required class="w-full border rounded-md p-2 mt-1" placeholder="joao@netmark.com">
             </div>
 
             <div>
@@ -64,10 +64,10 @@
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700">Cargo</label>
-              <select v-model="form.cargo" class="w-full border rounded-md p-2 mt-1 bg-white">
-                <option value="vendedor">Vendedor (Acesso Padrão)</option>
-                <option value="admin">Administrador (Acesso Total)</option>
+              <label class="block text-sm font-medium text-gray-700">Permissão</label>
+              <select v-model="form.role" class="w-full border rounded-md p-2 mt-1 bg-white">
+                <option value="vendedor">Vendedor</option>
+                <option value="admin">Administrador</option>
               </select>
             </div>
 
@@ -96,7 +96,7 @@ const form = ref({
   nome: '',
   email: '',
   senha: '',
-  cargo: 'vendedor'
+  role: 'vendedor' // Padrao
 });
 
 const carregarUsuarios = async () => {
@@ -109,7 +109,7 @@ const carregarUsuarios = async () => {
 };
 
 const abrirModal = () => {
-  form.value = { nome: '', email: '', senha: '', cargo: 'vendedor' };
+  form.value = { nome: '', email: '', senha: '', role: 'vendedor' };
   mostrarModal.value = true;
 };
 
@@ -123,7 +123,7 @@ const salvarUsuario = async () => {
     
     alert('Usuário criado com sucesso!');
     mostrarModal.value = false;
-    await carregarUsuarios(); // Atualiza a lista
+    await carregarUsuarios(); 
 
   } catch (error: any) {
     const msg = error.data?.message || 'Erro ao criar usuário.';
