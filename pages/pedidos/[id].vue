@@ -20,13 +20,21 @@
 
         <div class="flex items-center gap-3">
              
+             <button 
+                v-if="!modoCliente"
+                @click="abrirModalFinanceiro"
+                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold shadow-md transition flex items-center gap-2 animate-pulse"
+             >
+                💰 Fechar Venda
+             </button>
+
              <div v-if="!modoCliente" class="flex bg-white rounded-lg border border-gray-300 overflow-hidden shadow-sm">
                 <button 
                     @click="modoCorteUnico = false"
                     class="px-3 py-2 text-xs font-bold uppercase transition flex items-center gap-2"
                     :class="!modoCorteUnico ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:bg-gray-50'"
                 >
-                    🏠 Por Ambiente
+                    🏠 Ambiente
                 </button>
                 <div class="w-px bg-gray-300"></div>
                 <button 
@@ -34,7 +42,7 @@
                     class="px-3 py-2 text-xs font-bold uppercase transition flex items-center gap-2"
                     :class="modoCorteUnico ? 'bg-orange-100 text-orange-700' : 'text-gray-500 hover:bg-gray-50'"
                 >
-                    🪚 Corte Único
+                    🪚 Corte
                 </button>
              </div>
 
@@ -42,9 +50,9 @@
                 v-if="!modoCliente && !modoCorteUnico"
                 @click="salvarTudo"
                 :disabled="salvando"
-                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold shadow-md transition disabled:opacity-50 flex items-center gap-2"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold shadow-md transition disabled:opacity-50 flex items-center gap-2"
             >
-                {{ salvando ? 'Salvando...' : '💾 Salvar' }}
+                {{ salvando ? '...' : '💾 Salvar' }}
             </button>
 
             <div v-if="!modoCliente" class="flex items-center gap-2 bg-yellow-50 px-3 py-2 rounded border border-yellow-200" title="Multiplicador sobre o custo">
@@ -65,10 +73,6 @@
             >
                 <span v-if="gerandoPDF" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
                 <span v-else>📄 PDF</span>
-            </button>
-
-            <button @click="imprimir" class="bg-gray-800 hover:bg-black text-white px-4 py-2 rounded-lg font-bold shadow-md transition flex items-center gap-2">
-                🖨️
             </button>
         </div>
       </div>
@@ -175,7 +179,7 @@
                 <div class="flex justify-between items-center">
                     <div>
                         <p class="text-sm text-orange-800 font-bold">🪚 Plano de Corte Único (Produção)</p>
-                        <p class="text-xs text-orange-700">Materiais agrupados para otimização de chapa e compra.</p>
+                        <p class="text-xs text-orange-700">Materiais agrupados para otimização.</p>
                     </div>
                     <div class="text-right">
                         <span class="text-xs font-bold text-gray-500 uppercase">Custo Total Matéria-Prima</span>
@@ -188,9 +192,9 @@
                 <table class="w-full text-sm text-left">
                     <thead class="bg-gray-800 text-white uppercase font-semibold">
                         <tr>
-                            <th class="p-3 w-1/3">Material / Descrição</th>
+                            <th class="p-3 w-1/3">Material</th>
                             <th class="p-3">Marca/Ref</th>
-                            <th class="p-3 text-center">Onde é usado?</th>
+                            <th class="p-3 text-center">Locais</th>
                             <th class="p-3 text-center w-24">Qtd Total</th>
                             <th class="p-3 text-right w-32">Total Custo</th>
                         </tr>
@@ -204,18 +208,11 @@
                                     {{ loc }}
                                 </span>
                             </td>
-                            <td class="p-3 text-center font-black text-lg text-blue-600 bg-blue-50">
-                                {{ material.qtdTotal }}
-                            </td>
-                            <td class="p-3 text-right font-bold text-gray-700">
-                                {{ formatarMoeda(material.custoTotal) }}
-                            </td>
+                            <td class="p-3 text-center font-black text-lg text-blue-600 bg-blue-50">{{ material.qtdTotal }}</td>
+                            <td class="p-3 text-right font-bold text-gray-700">{{ formatarMoeda(material.custoTotal) }}</td>
                         </tr>
                     </tbody>
                 </table>
-                <div class="p-4 bg-gray-50 text-center text-xs text-gray-500 border-t">
-                    * Esta lista agrupa itens idênticos de todos os ambientes para facilitar o corte e compra.
-                </div>
             </div>
         </div>
 
@@ -233,13 +230,62 @@
           <div v-if="modoCliente" class="mt-16 text-center">
             <p class="text-sm font-bold text-slate-800 mb-2">Condições Gerais</p>
             <p class="text-xs text-gray-500 max-w-2xl mx-auto leading-relaxed">
-                Este orçamento tem validade de 10 dias. Pagamento em até 12x (consulte condições).
-                Entrega e montagem inclusas.
+                Este orçamento tem validade de 10 dias. Pagamento em até 12x. Entrega e montagem inclusas.
             </p>
           </div>
         </footer>
 
       </div>
+
+      <div v-if="mostrarModalFin" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 print:hidden">
+         <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 transform transition-all scale-100">
+            <h2 class="text-xl font-bold text-slate-800 mb-1">Fechar Venda & Financeiro</h2>
+            <p class="text-sm text-gray-500 mb-6">Valor Total: <span class="font-bold text-green-600">{{ formatarMoeda(totalFinal) }}</span></p>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase">Entrada (Pix/Dinheiro)</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-2 text-gray-400">R$</span>
+                        <input type="number" v-model.number="fin.entrada" class="w-full pl-8 p-2 border rounded font-bold text-slate-700 focus:ring-2 focus:ring-green-500 outline-none" />
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 p-4 rounded border">
+                    <div class="flex justify-between text-sm mb-2">
+                        <span class="text-gray-600">Restante:</span>
+                        <span class="font-bold">{{ formatarMoeda(Math.max(0, totalFinal - fin.entrada)) }}</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500">Nº Parcelas</label>
+                            <input type="number" v-model.number="fin.parcelas" min="1" max="24" class="w-full p-2 border rounded font-bold text-center" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500">1º Vencimento</label>
+                            <input type="date" v-model="fin.dataInicio" class="w-full p-2 border rounded text-xs" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center p-3 bg-blue-50 text-blue-800 rounded text-sm font-medium">
+                    <span v-if="fin.parcelas > 0 && (totalFinal - fin.entrada) > 0">
+                        {{ fin.parcelas }}x de {{ formatarMoeda((totalFinal - fin.entrada) / fin.parcelas) }}
+                    </span>
+                    <span v-else>Pagamento à Vista</span>
+                </div>
+            </div>
+
+            <div class="mt-6 flex gap-3">
+                <button @click="mostrarModalFin = false" class="flex-1 py-3 text-gray-500 font-bold hover:bg-gray-100 rounded">Cancelar</button>
+                <button @click="confirmarFechamento" :disabled="salvando" class="flex-1 py-3 bg-green-600 text-white font-bold rounded shadow hover:bg-green-700 disabled:opacity-50">
+                    {{ salvando ? 'Processando...' : '✅ Confirmar' }}
+                </button>
+            </div>
+         </div>
+      </div>
+
     </div>
   </NuxtLayout>
 </template>
@@ -252,43 +298,74 @@ const id = route.params.id;
 const data = ref<any>(null);
 const loading = ref(true);
 const salvando = ref(false);
-const gerandoPDF = ref(false); // NOVO
+const gerandoPDF = ref(false);
 const modoCliente = ref(true); 
 const modoCorteUnico = ref(false); 
 const fatorMultiplicador = ref(1.0);
 const descricoesBlocos = ref<Record<string, string>>({});
 
+// Estados Financeiros (NOVO)
+const mostrarModalFin = ref(false);
+const fin = ref({
+    entrada: 0,
+    parcelas: 1,
+    dataInicio: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0]
+});
+
 const TEXTO_PADRAO = `Móveis planejados 100% MDF. Ferragens com amortecimento e instalação inclusa.`;
 
-// --- FUNÇÃO DE PDF (NOVO) ---
+// --- FUNÇÃO FINANCEIRA (NOVO) ---
+const abrirModalFinanceiro = () => {
+    fin.value.entrada = totalFinal.value * 0.4; // Sugere 40% de entrada
+    mostrarModalFin.value = true;
+};
+
+const confirmarFechamento = async () => {
+    if (!confirm('Isso irá fechar o pedido e gerar o financeiro. Confirmar?')) return;
+    salvando.value = true;
+    try {
+        const restante = totalFinal.value - fin.value.entrada;
+        await $fetch('/api/financeiro/gerar', {
+            method: 'POST',
+            body: {
+                pedido_id: id,
+                entrada: fin.value.entrada,
+                num_parcelas: fin.value.parcelas,
+                valor_parcela: fin.value.parcelas > 0 ? restante / fin.value.parcelas : 0,
+                data_inicio: fin.value.dataInicio
+            }
+        });
+        alert('Venda fechada com sucesso! Financeiro gerado.');
+        mostrarModalFin.value = false;
+        // navigateTo('/dashboard'); // Descomente se quiser ir pro dashboard
+    } catch (e: any) {
+        alert('Erro: ' + e.message);
+    } finally {
+        salvando.value = false;
+    }
+};
+
+// --- FUNÇÃO DE PDF ---
 const gerarPDF = async () => {
-    // 1. Força o modo cliente para o PDF sair limpo
     modoCliente.value = true;
     modoCorteUnico.value = false;
     gerandoPDF.value = true;
 
-    // 2. Importa a biblioteca dinamicamente (para não dar erro no Nuxt)
     // @ts-ignore
     const html2pdf = (await import('html2pdf.js')).default;
-
-    // 3. Configurações do PDF
     const element = document.getElementById('area-impressao');
     const opt = {
-        margin:       [10, 10, 10, 10], // Margens (top, left, bottom, right)
-        filename:     `Orcamento_Arboreo_${id}_${data.value.cliente_nome}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true }, // Scale 2 melhora a qualidade
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        margin: [10, 10, 10, 10],
+        filename: `Orcamento_Arboreo_${id}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
-
-    // 4. Gera e Salva
     await html2pdf().set(opt).from(element).save();
-    
     gerandoPDF.value = false;
 };
 
 // --- CÁLCULOS ---
-
 const itensAgrupados = computed(() => {
     if (!data.value || !data.value.itens) return {};
     return data.value.itens.reduce((acc: any, item: any) => {
@@ -305,29 +382,16 @@ const itensAgrupados = computed(() => {
 
 const itensCorteUnico = computed(() => {
     if (!data.value || !data.value.itens) return [];
-    
     const mapa = new Map();
     data.value.itens.forEach((item: any) => {
         const chave = (item.descricao + item.marca).trim().toLowerCase();
-        if (!mapa.has(chave)) {
-            mapa.set(chave, {
-                descricao: item.descricao,
-                marca: item.marca,
-                qtdTotal: 0,
-                custoTotal: 0,
-                locais: new Set()
-            });
-        }
+        if (!mapa.has(chave)) mapa.set(chave, { descricao: item.descricao, marca: item.marca, qtdTotal: 0, custoTotal: 0, locais: new Set() });
         const entry = mapa.get(chave);
         entry.qtdTotal += Number(item.quantidade) || 0;
         entry.custoTotal += (Number(item.quantidade) || 0) * (Number(item.preco_unitario) || 0);
         entry.locais.add(item.comodo || 'Geral');
     });
-
-    return Array.from(mapa.values()).map((i: any) => ({
-        ...i,
-        locais: Array.from(i.locais)
-    }));
+    return Array.from(mapa.values()).map((i: any) => ({ ...i, locais: Array.from(i.locais) }));
 });
 
 const totalBase = computed(() => {
@@ -338,7 +402,6 @@ const totalBase = computed(() => {
 const totalFinal = computed(() => totalBase.value * fatorMultiplicador.value);
 
 // --- AÇÕES ---
-
 const alternarModoCliente = () => {
     modoCliente.value = !modoCliente.value;
     if (modoCliente.value) modoCorteUnico.value = false;
@@ -401,9 +464,5 @@ onMounted(fetchData);
   .shadow-xl { box-shadow: none !important; }
   textarea { border: none; resize: none; overflow: hidden; }
 }
-
-/* Quebra de página automática no PDF se ficar muito grande */
-.page-break {
-    page-break-inside: avoid;
-}
+.page-break { page-break-inside: avoid; }
 </style>
