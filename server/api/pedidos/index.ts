@@ -6,26 +6,21 @@ export default defineEventHandler(async (event) => {
   const cookie = getCookie(event, 'usuario_sessao')
   if (!cookie) throw createError({ statusCode: 401, message: 'Não autorizado' })
   
-  // Decodifica o token para pegar o ID de quem está logado AGORA
-  const payload = jwt.decode(cookie) as { id: number, nome: string, empresa_id: number }
-
+  const payload = jwt.decode(cookie) as { id: number, empresa_id: number }
   const method = event.node.req.method
 
-  // --- GET: LISTAR PEDIDOS ---
+  // --- GET: Listar Pedidos ---
   if (method === 'GET') {
     const query = getQuery(event)
     const statusFiltro = query.status as string
 
     try {
-      // JOIN DUPLO:
-      // 1. Traz o nome do vendedor original (tabela usuarios -> u_vend)
-      // 2. Traz o nome de quem editou por último (tabela usuarios -> u_edit)
-      const pedidos = await sql`
+      return await sql`
         SELECT 
           p.*,
           p.cliente_nome,
-          u_vend.nome as vendedor_nome, -- O dono da venda
-          u_edit.nome as editor_nome    -- Quem mexeu por último
+          u_vend.nome as vendedor_nome,
+          u_edit.nome as editor_nome
         FROM pedidos p
         LEFT JOIN usuarios u_vend ON p.vendedor_id = u_vend.id
         LEFT JOIN usuarios u_edit ON p.atualizado_por = u_edit.id
@@ -33,20 +28,16 @@ export default defineEventHandler(async (event) => {
         ${statusFiltro && statusFiltro !== 'TODOS' ? sql`AND p.status = ${statusFiltro}` : sql``}
         ORDER BY p.updated_at DESC NULLS LAST, p.id DESC
       `
-      return pedidos
     } catch (error) {
-      console.error('Erro ao buscar pedidos:', error)
+      console.error(error)
       return []
     }
   }
 
-  // --- PUT: ATUALIZAR STATUS ---
+  // --- PUT: Atualizar Status ---
   if (method === 'PUT') {
     const body = await readBody(event)
-    if (!body.id) throw createError({ statusCode: 400, message: 'ID obrigatório' })
-
     try {
-      // Aqui gravamos o ID de quem está logado (payload.id) na coluna atualizado_por
       await sql`
         UPDATE pedidos SET 
           status = ${body.status},
@@ -56,8 +47,66 @@ export default defineEventHandler(async (event) => {
       `
       return { success: true }
     } catch (error) {
-      console.error('Erro ao atualizar:', error)
-      throw createError({ statusCode: 500, message: 'Erro ao atualizar pedido' })
+      throw createError({ statusCode: 500, message: 'Erro ao atualizar' })
+    }
+  }
+
+  // --- POST: CRIAR PEDIDO E BAIXAR ESTOQUE (NOVO!) ---
+  if (method === 'POST') {
+    const body = await readBody(event)
+    
+    if (!body.cliente_id) throw createError({ statusCode: 400, message: 'Cliente obrigatório' })
+    if (!body.itens || body.itens.length === 0) throw createError({ statusCode: 400, message: 'Adicione produtos' })
+
+    try {
+        // Usamos transação (.begin) para garantir segurança: 
+        // ou salva tudo (pedido + itens + estoque) ou não salva nada se der erro.
+        const resultado = await sql.begin(async sql => {
+            
+            // 1. Busca nome do cliente para histórico
+            const [cli] = await sql`SELECT nome FROM clientes WHERE id = ${body.cliente_id}`
+            const nomeCliente = cli?.nome || 'Consumidor Final'
+
+            // 2. Cria o Pedido
+            const [pedido] = await sql`
+                INSERT INTO pedidos (
+                    empresa_id, vendedor_id, cliente_id, cliente_nome, 
+                    status, valor_total, data_criacao
+                ) VALUES (
+                    ${payload.empresa_id}, ${payload.id}, ${body.cliente_id}, ${nomeCliente},
+                    ${body.status || 'ORCAMENTO'}, ${body.valor_total}, NOW()
+                )
+                RETURNING id
+            `
+
+            // 3. Processa cada Item
+            for (const item of body.itens) {
+                // Salva o item ligado ao pedido
+                await sql`
+                    INSERT INTO itens_pedido (
+                        pedido_id, produto_id, quantidade, preco_unitario, subtotal
+                    ) VALUES (
+                        ${pedido.id}, ${item.id}, ${item.quantidade}, ${item.preco}, ${item.total}
+                    )
+                `
+
+                // BAIXA DE ESTOQUE (Se o produto tiver ID)
+                if (item.id) {
+                    await sql`
+                        UPDATE produtos 
+                        SET estoque_atual = estoque_atual - ${item.quantidade}
+                        WHERE id = ${item.id}
+                    `
+                }
+            }
+            return pedido
+        })
+
+        return { success: true, id: resultado.id }
+
+    } catch (error: any) {
+        console.error('Erro no POST pedido:', error)
+        throw createError({ statusCode: 500, message: 'Erro ao processar venda.' })
     }
   }
 })
