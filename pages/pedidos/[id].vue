@@ -10,32 +10,51 @@
             <div class="h-6 w-px bg-gray-300"></div>
             
             <button 
-                @click="modoCliente = !modoCliente"
+                @click="alternarModoCliente"
                 :class="modoCliente ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 border border-gray-300'"
                 class="px-4 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-2"
             >
-                {{ modoCliente ? '👀 Visão do Cliente' : '🛠️ Visão Técnica (Editável)' }}
+                {{ modoCliente ? '👀 Visão do Cliente' : '🛠️ Visão Técnica' }}
             </button>
         </div>
 
         <div class="flex items-center gap-3">
+             
+             <div v-if="!modoCliente" class="flex bg-white rounded-lg border border-gray-300 overflow-hidden shadow-sm">
+                <button 
+                    @click="modoCorteUnico = false"
+                    class="px-3 py-2 text-xs font-bold uppercase transition flex items-center gap-2"
+                    :class="!modoCorteUnico ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:bg-gray-50'"
+                >
+                    🏠 Por Ambiente
+                </button>
+                <div class="w-px bg-gray-300"></div>
+                <button 
+                    @click="modoCorteUnico = true"
+                    class="px-3 py-2 text-xs font-bold uppercase transition flex items-center gap-2"
+                    :class="modoCorteUnico ? 'bg-orange-100 text-orange-700' : 'text-gray-500 hover:bg-gray-50'"
+                >
+                    🪚 Corte Único
+                </button>
+             </div>
+
              <button 
-                v-if="!modoCliente"
+                v-if="!modoCliente && !modoCorteUnico"
                 @click="salvarTudo"
                 :disabled="salvando"
                 class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold shadow-md transition disabled:opacity-50 flex items-center gap-2"
             >
-                {{ salvando ? 'Salvando...' : '💾 Salvar Alterações' }}
+                {{ salvando ? 'Salvando...' : '💾 Salvar' }}
             </button>
 
-             <div class="flex items-center gap-2 bg-yellow-50 px-3 py-2 rounded border border-yellow-200" title="Multiplicador sobre o custo">
+            <div v-if="!modoCliente" class="flex items-center gap-2 bg-yellow-50 px-3 py-2 rounded border border-yellow-200" title="Multiplicador sobre o custo">
                 <span class="text-xs font-bold text-yellow-800 uppercase">Markup:</span>
                 <input 
                     type="number" 
                     v-model.number="fatorMultiplicador" 
                     step="0.1" 
                     min="1.0"
-                    class="w-16 text-center font-bold text-blue-900 bg-white border border-yellow-300 rounded focus:ring-1 focus:ring-blue-500"
+                    class="w-14 text-center font-bold text-blue-900 bg-white border border-yellow-300 rounded focus:ring-1 focus:ring-blue-500"
                 />
             </div>
 
@@ -82,7 +101,7 @@
                     </div>
                 </div>
                 <div class="pl-4 pr-4">
-                    <p class="text-xs text-gray-400 font-bold mb-1 print:hidden uppercase">Descrição do Ambiente:</p>
+                    <p class="text-xs text-gray-400 font-bold mb-1 print:hidden uppercase">Descrição Comercial:</p>
                     <textarea 
                         v-model="descricoesBlocos[nomeComodo]" 
                         rows="4"
@@ -92,19 +111,17 @@
             </div>
         </div>
 
-        <div v-else>
-            <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 flex justify-between items-center">
-                <div>
-                    <p class="text-sm text-blue-800 font-bold">🛠️ Modo Técnico / Edição</p>
-                    <p class="text-xs text-blue-600">Altere itens, adicione materiais e crie novos ambientes aqui.</p>
-                </div>
+        <div v-else-if="!modoCorteUnico">
+            <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+                <p class="text-sm text-blue-800 font-bold">🛠️ Modo Edição por Ambiente</p>
+                <p class="text-xs text-blue-600">Ideal para organizar a montagem e instalação cômodo a cômodo.</p>
             </div>
 
             <div v-for="(grupo, nomeComodo) in itensAgrupados" :key="nomeComodo" class="mb-8 border rounded-lg overflow-hidden bg-white shadow-sm">
                 <h3 class="bg-gray-100 p-3 font-bold text-gray-700 border-b flex justify-between items-center">
                     <span>{{ nomeComodo }}</span>
                     <span class="text-xs bg-white px-2 py-1 rounded border text-gray-500">
-                        Custo do Ambiente: {{ formatarMoeda(grupo.subtotal) }}
+                        Custo: {{ formatarMoeda(grupo.subtotal) }}
                     </span>
                 </h3>
                 
@@ -122,69 +139,87 @@
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         <tr v-for="(item, idx) in grupo.itens" :key="idx" class="hover:bg-gray-50 group">
-                            <td class="p-1">
-                                <input v-model="item.descricao" class="w-full border-0 bg-transparent focus:ring-1 focus:ring-blue-500 rounded px-2 py-1 text-gray-900 font-medium placeholder-gray-300" placeholder="Nome do item" />
-                            </td>
-                            <td class="p-1">
-                                <input v-model="item.marca" class="w-full border-0 bg-transparent focus:ring-1 focus:ring-blue-500 rounded px-2 py-1 text-gray-500" placeholder="-" />
-                            </td>
-                            <td class="p-1">
-                                <input v-model="item.fornecedor" class="w-full border-0 bg-transparent focus:ring-1 focus:ring-blue-500 rounded px-2 py-1 text-gray-500" placeholder="-" />
-                            </td>
-                            <td class="p-1">
-                                <input type="number" v-model.number="item.quantidade" class="w-full text-center border-0 bg-transparent focus:ring-1 focus:ring-blue-500 rounded px-2 py-1 font-bold text-blue-600" />
-                            </td>
-                            <td class="p-1">
-                                <input type="number" step="0.01" v-model.number="item.preco_unitario" class="w-full text-right border-0 bg-transparent focus:ring-1 focus:ring-blue-500 rounded px-2 py-1 font-bold text-gray-700" />
-                            </td>
-                            <td class="p-3 text-right font-bold text-gray-800">
-                                {{ formatarMoeda((item.quantidade || 0) * (item.preco_unitario || 0)) }}
-                            </td>
-                            <td class="p-1 text-center">
-                                <button @click="removerItem(item)" class="text-red-300 hover:text-red-600 font-bold text-lg transition" title="Remover item">×</button>
-                            </td>
+                            <td class="p-1"><input v-model="item.descricao" class="w-full border-0 bg-transparent focus:ring-1 focus:ring-blue-500 rounded px-2 py-1 font-medium" /></td>
+                            <td class="p-1"><input v-model="item.marca" class="w-full border-0 bg-transparent focus:ring-1 focus:ring-blue-500 rounded px-2 py-1 text-gray-500" placeholder="-" /></td>
+                            <td class="p-1"><input v-model="item.fornecedor" class="w-full border-0 bg-transparent focus:ring-1 focus:ring-blue-500 rounded px-2 py-1 text-gray-500" placeholder="-" /></td>
+                            <td class="p-1"><input type="number" v-model.number="item.quantidade" class="w-full text-center border-0 bg-transparent focus:ring-1 focus:ring-blue-500 rounded px-2 py-1 font-bold text-blue-600" /></td>
+                            <td class="p-1"><input type="number" step="0.01" v-model.number="item.preco_unitario" class="w-full text-right border-0 bg-transparent focus:ring-1 focus:ring-blue-500 rounded px-2 py-1 font-bold text-gray-700" /></td>
+                            <td class="p-3 text-right font-bold text-gray-800">{{ formatarMoeda((item.quantidade || 0) * (item.preco_unitario || 0)) }}</td>
+                            <td class="p-1 text-center"><button @click="removerItem(item)" class="text-red-300 hover:text-red-600 font-bold text-lg" title="Remover item">×</button></td>
                         </tr>
                     </tbody>
                 </table>
-
                 <div class="bg-gray-50 p-2 border-t flex justify-start">
-                    <button 
-                        @click="adicionarItem(nomeComodo)" 
-                        class="text-xs flex items-center gap-1 text-blue-600 font-bold hover:bg-blue-100 px-3 py-1 rounded transition"
-                    >
-                        <span class="text-lg">+</span> Adicionar Material em {{ nomeComodo }}
+                    <button @click="adicionarItem(nomeComodo)" class="text-xs flex items-center gap-1 text-blue-600 font-bold hover:bg-blue-100 px-3 py-1 rounded transition">
+                        <span class="text-lg">+</span> Adicionar Material
                     </button>
                 </div>
             </div>
 
-            <button 
-                @click="adicionarNovoAmbiente"
-                class="w-full py-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 font-bold hover:bg-gray-50 hover:border-gray-400 hover:text-blue-600 transition mb-8"
-            >
-                + Criar Novo Ambiente / Cômodo
+            <button @click="adicionarNovoAmbiente" class="w-full py-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 font-bold hover:bg-gray-50 hover:border-gray-400 hover:text-blue-600 transition mb-8">
+                + Criar Novo Ambiente
             </button>
+        </div>
+
+        <div v-else>
+            <div class="bg-orange-50 border-l-4 border-orange-500 p-4 mb-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-sm text-orange-800 font-bold">🪚 Plano de Corte Único (Produção)</p>
+                        <p class="text-xs text-orange-700">Materiais agrupados para otimização de chapa e compra.</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs font-bold text-gray-500 uppercase">Custo Total Matéria-Prima</span>
+                        <p class="text-2xl font-black text-gray-800">{{ formatarMoeda(totalBase) }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border rounded-lg overflow-hidden bg-white shadow-sm">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-gray-800 text-white uppercase font-semibold">
+                        <tr>
+                            <th class="p-3 w-1/3">Material / Descrição</th>
+                            <th class="p-3">Marca/Ref</th>
+                            <th class="p-3 text-center">Onde é usado?</th>
+                            <th class="p-3 text-center w-24">Qtd Total</th>
+                            <th class="p-3 text-right w-32">Total Custo</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        <tr v-for="(material, idx) in itensCorteUnico" :key="idx" class="hover:bg-orange-50">
+                            <td class="p-3 font-bold text-gray-800">{{ material.descricao || 'Sem nome' }}</td>
+                            <td class="p-3 text-gray-500">{{ material.marca || '-' }}</td>
+                            <td class="p-3 text-center text-xs text-gray-500">
+                                <span v-for="loc in material.locais" :key="loc" class="inline-block bg-gray-100 px-2 py-0.5 rounded mr-1 mb-1 border">
+                                    {{ loc }}
+                                </span>
+                            </td>
+                            <td class="p-3 text-center font-black text-lg text-blue-600 bg-blue-50">
+                                {{ material.qtdTotal }}
+                            </td>
+                            <td class="p-3 text-right font-bold text-gray-700">
+                                {{ formatarMoeda(material.custoTotal) }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="p-4 bg-gray-50 text-center text-xs text-gray-500 border-t">
+                    * Esta lista agrupa itens idênticos de todos os ambientes para facilitar o corte e compra.
+                </div>
+            </div>
         </div>
 
         <footer class="mt-12 pt-6 border-t-2 border-slate-800 break-inside-avoid">
           <div class="flex flex-col md:flex-row justify-end items-center gap-6">
-            
             <div v-if="!modoCliente" class="text-right text-sm text-gray-500 space-y-1 bg-gray-50 p-3 rounded">
-                <p>Custo Total (Base): {{ formatarMoeda(totalBase) }}</p>
-                <p class="text-green-600">Lucro Estimado: {{ formatarMoeda(totalFinal - totalBase) }}</p>
+                <p>Custo Matéria-Prima: {{ formatarMoeda(totalBase) }}</p>
+                <p class="text-green-600">Margem Bruta: {{ formatarMoeda(totalFinal - totalBase) }}</p>
             </div>
-
             <div class="text-right">
-                <p class="text-sm text-gray-500 uppercase font-bold tracking-wider mb-1">Valor Total</p>
+                <p class="text-sm text-gray-500 uppercase font-bold tracking-wider mb-1">Valor Final</p>
                 <p class="text-4xl font-black text-green-700">{{ formatarMoeda(totalFinal) }}</p>
             </div>
-          </div>
-          
-          <div v-if="modoCliente" class="mt-16 text-center">
-            <p class="text-sm font-bold text-slate-800 mb-2">Condições Gerais</p>
-            <p class="text-xs text-gray-500 max-w-2xl mx-auto leading-relaxed">
-                Este orçamento tem validade de 10 dias. Pagamento em até 12x (consulte condições).
-                Entrega e montagem inclusas.
-            </p>
           </div>
         </footer>
 
@@ -197,82 +232,91 @@
 const route = useRoute();
 const id = route.params.id;
 
-// Estados Reativos
+// Estados
 const data = ref<any>(null);
 const loading = ref(true);
 const salvando = ref(false);
-const modoCliente = ref(true); // Controla qual tela exibe
-const fatorMultiplicador = ref(1.0); // Markup padrão
-const descricoesBlocos = ref<Record<string, string>>({}); // Descrições comerciais por ambiente
+const modoCliente = ref(true); 
+const modoCorteUnico = ref(false); // NOVO: Controla a visão de Corte
+const fatorMultiplicador = ref(1.0);
+const descricoesBlocos = ref<Record<string, string>>({});
 
-// Texto padrão para novos ambientes
-const TEXTO_PADRAO = `Móveis planejados de alto padrão, produzidos em 100% MDF. Inclui ferragens com amortecimento, puxadores definidos em projeto e instalação especializada.`;
+const TEXTO_PADRAO = `Móveis planejados 100% MDF. Ferragens com amortecimento e instalação inclusa.`;
 
-// --- Computed Properties (Cálculos Automáticos) ---
+// --- CÁLCULOS ---
 
-// Agrupa os itens por "comodo" para exibir separado
+// Agrupa por AMBIENTE (Visão Montador)
 const itensAgrupados = computed(() => {
     if (!data.value || !data.value.itens) return {};
-
     return data.value.itens.reduce((acc: any, item: any) => {
-        let comodoKey = item.comodo;
-        if (!comodoKey || comodoKey.trim() === '') comodoKey = 'PADRAO';
-
-        if (!acc[comodoKey]) {
-            acc[comodoKey] = { itens: [], subtotal: 0 };
-            // Inicia descrição se não existir
-            if (!descricoesBlocos.value[comodoKey]) {
-                descricoesBlocos.value[comodoKey] = `${TEXTO_PADRAO}`;
-            }
+        let comodo = item.comodo || 'PADRAO';
+        if (!acc[comodo]) {
+            acc[comodo] = { itens: [], subtotal: 0 };
+            if (!descricoesBlocos.value[comodo]) descricoesBlocos.value[comodo] = TEXTO_PADRAO;
         }
-
-        // Soma custo
-        const custoItem = (Number(item.quantidade) || 0) * (Number(item.preco_unitario) || 0);
-        acc[comodoKey].itens.push(item);
-        acc[comodoKey].subtotal += custoItem;
-
+        acc[comodo].itens.push(item);
+        acc[comodo].subtotal += (Number(item.quantidade) || 0) * (Number(item.preco_unitario) || 0);
         return acc;
     }, {});
 });
 
-// Total de Custo (Soma de tudo)
-const totalBase = computed(() => {
-    if (!data.value || !data.value.itens) return 0;
-    return data.value.itens.reduce((acc: number, item: any) => acc + ((Number(item.quantidade) || 0) * (Number(item.preco_unitario) || 0)), 0);
+// Agrupa por MATERIAL (Visão Corte Único) - NOVO!
+const itensCorteUnico = computed(() => {
+    if (!data.value || !data.value.itens) return [];
+    
+    const mapa = new Map();
+
+    data.value.itens.forEach((item: any) => {
+        // Cria uma chave única baseada no nome + marca (para não misturar materiais diferentes)
+        const chave = (item.descricao + item.marca).trim().toLowerCase();
+
+        if (!mapa.has(chave)) {
+            mapa.set(chave, {
+                descricao: item.descricao,
+                marca: item.marca,
+                qtdTotal: 0,
+                custoTotal: 0,
+                locais: new Set() // Para saber onde esse material é usado
+            });
+        }
+
+        const entry = mapa.get(chave);
+        entry.qtdTotal += Number(item.quantidade) || 0;
+        entry.custoTotal += (Number(item.quantidade) || 0) * (Number(item.preco_unitario) || 0);
+        entry.locais.add(item.comodo || 'Geral');
+    });
+
+    return Array.from(mapa.values()).map((i: any) => ({
+        ...i,
+        locais: Array.from(i.locais) // Converte Set para Array para exibir
+    }));
 });
 
-// Valor Final de Venda (Custo * Markup)
+const totalBase = computed(() => {
+    if (!data.value || !data.value.itens) return 0;
+    return data.value.itens.reduce((acc: number, i: any) => acc + ((Number(i.quantidade) || 0) * (Number(i.preco_unitario) || 0)), 0);
+});
+
 const totalFinal = computed(() => totalBase.value * fatorMultiplicador.value);
 
+// --- AÇÕES ---
 
-// --- AÇÕES DO SISTEMA ---
+const alternarModoCliente = () => {
+    modoCliente.value = !modoCliente.value;
+    if (modoCliente.value) modoCorteUnico.value = false; // Reseta ao voltar pro cliente
+};
 
-// Adiciona linha em branco na tabela
 const adicionarItem = (comodo: string) => {
-    // ID null indica para o backend que deve fazer INSERT
-    data.value.itens.push({
-        id: null, 
-        pedido_id: id,
-        comodo: comodo, // Importante passar o cômodo
-        descricao: '',
-        marca: '',
-        fornecedor: '',
-        quantidade: 1,
-        preco_unitario: 0
-    });
+    data.value.itens.push({ id: null, pedido_id: id, comodo: comodo, descricao: '', quantidade: 1, preco_unitario: 0 });
 };
 
 const adicionarNovoAmbiente = () => {
-    const nome = prompt("Nome do novo ambiente (Ex: Lavanderia):");
-    if (nome && nome.trim() !== '') {
-        adicionarItem(nome.toUpperCase()); // Já cria adicionando o 1º item
-    }
+    const nome = prompt("Nome do novo ambiente:");
+    if (nome) adicionarItem(nome.toUpperCase());
 };
 
-const removerItem = (itemParaRemover: any) => {
-    if(!confirm("Tem certeza que deseja remover este item da lista?")) return;
-    // Remove visualmente da lista
-    data.value.itens = data.value.itens.filter((i: any) => i !== itemParaRemover);
+const removerItem = (item: any) => {
+    if(confirm("Remover item?")) data.value.itens = data.value.itens.filter((i: any) => i !== item);
 };
 
 const salvarTudo = async () => {
@@ -280,56 +324,34 @@ const salvarTudo = async () => {
     try {
         await $fetch('/api/pedidos', {
             method: 'PUT',
-            body: { 
-                id: id,
-                valor_total: totalFinal.value,
-                // Envia a lista completa (itens existentes + novos)
-                itens: data.value.itens 
-            }
+            body: { id: id, valor_total: totalFinal.value, itens: data.value.itens }
         });
-        alert('Orçamento salvo com sucesso!');
-        fetchData(); // Recarrega para pegar os IDs novos gerados
-    } catch (e: any) {
-        alert('Erro ao salvar: ' + e.message);
-    } finally {
-        salvando.value = false;
-    }
+        alert('Salvo com sucesso!');
+        fetchData();
+    } catch (e: any) { alert('Erro: ' + e.message); } 
+    finally { salvando.value = false; }
 };
 
 const imprimir = () => {
-    modoCliente.value = true; // Força visão limpa
+    // Se estiver em corte único, imprime a lista técnica. Se não, imprime orçamento.
+    if (!modoCorteUnico.value) modoCliente.value = true;
     setTimeout(() => window.print(), 200);
 };
 
-// --- INICIALIZAÇÃO ---
 const fetchData = async () => {
     try {
-        loading.value = true;
-        const response: any = await $fetch(`/api/pedidos/${id}`);
-        data.value = response;
-        
-        // Tenta calcular o Markup atual se já existir valor salvo
-        if (data.value && data.value.valor_total) {
-            const custo = data.value.itens.reduce((sum:number, i:any) => sum + (Number(i.quantidade)*Number(i.preco_unitario)), 0);
-            const venda = Number(data.value.valor_total);
-            if (custo > 0 && venda > custo) {
-                fatorMultiplicador.value = Number((venda / custo).toFixed(2));
-            }
+        const res: any = await $fetch(`/api/pedidos/${id}`);
+        data.value = res;
+        if (data.value?.valor_total) {
+            const custo = data.value.itens.reduce((s:number, i:any) => s + (Number(i.quantidade)*Number(i.preco_unitario)), 0);
+            if (custo > 0) fatorMultiplicador.value = Number((Number(data.value.valor_total) / custo).toFixed(2));
         }
-    } catch (e) {
-        console.error(e);
-    } finally {
-        loading.value = false;
-    }
+    } catch (e) { console.error(e); } 
+    finally { loading.value = false; }
 };
 
-const formatarMoeda = (val: any) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(val) || 0);
-};
-
-const formatarData = (dataIso: string) => {
-    try { return new Date(dataIso).toLocaleDateString('pt-BR'); } catch { return ''; }
-};
+const formatarMoeda = (val: any) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(val) || 0);
+const formatarData = (d: string) => { try { return new Date(d).toLocaleDateString('pt-BR'); } catch { return ''; } };
 
 onMounted(fetchData);
 </script>
@@ -340,6 +362,6 @@ onMounted(fetchData);
   .break-inside-avoid { break-inside: avoid; }
   body { background: white; -webkit-print-color-adjust: exact; }
   .shadow-xl { box-shadow: none !important; }
-  textarea { overflow: hidden; resize: none; border: none; }
+  textarea { border: none; resize: none; overflow: hidden; }
 }
 </style>
