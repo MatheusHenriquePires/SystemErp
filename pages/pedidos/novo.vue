@@ -1,277 +1,168 @@
 <template>
-    <ClientOnly>
-        <div class="px-4 py-6 md:px-6 md:py-8 lg:px-8 max-w-4xl mx-auto">
+    <NuxtLayout name="dashboard-layout">
+        <div class="px-4 py-6 md:px-6 md:py-8 max-w-7xl mx-auto">
             
-            <div class="flex items-center mb-6">
-                <NuxtLink to="/pedidos" class="text-gray-600 hover:text-blue-600 mr-4">
-                    &larr; Voltar
-                </NuxtLink>
-                <h1 class="text-3xl font-bold text-gray-900">✨ Novo Orçamento</h1>
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center">
+                    <NuxtLink to="/pedidos" class="text-gray-600 hover:text-blue-600 mr-4">&larr; Voltar</NuxtLink>
+                    <h1 class="text-3xl font-bold text-gray-900">🛠️ Orçamento Técnico (Engenharia)</h1>
+                </div>
             </div>
 
             <form @submit.prevent="submitOrcamento" class="space-y-6">
                 
                 <div class="p-6 border rounded-lg shadow-sm bg-white">
-                    <h2 class="text-xl font-semibold mb-4 text-gray-700">Dados Principais</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Responsável</label>
-                            <div class="mt-1 flex items-center bg-gray-100 border border-gray-300 rounded-md p-2">
-                                <span class="text-gray-500 mr-2">👤</span>
-                                <input 
-                                    :value="usuarioAtual" 
-                                    disabled 
-                                    class="bg-transparent border-none text-gray-600 font-bold w-full focus:ring-0 cursor-not-allowed"
-                                />
-                            </div>
-                        </div>
-
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Cliente</label>
-                            <select v-model.number="form.cliente_id" required 
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
-                                
-                                <option disabled value="0">
-                                    {{ loadingClientes ? 'Carregando...' : 'Selecione...' }}
-                                </option>
-                                
-                                <option v-for="cliente in clientes" :key="cliente.id" :value="cliente.id">
-                                    {{ cliente.nome }}
-                                </option>
+                            <select v-model.number="form.cliente_id" required class="mt-1 block w-full rounded-md border-gray-300 p-2 border">
+                                <option disabled value="0">Selecione um cliente...</option>
+                                <option v-for="c in clientes" :key="c.id" :value="c.id">{{ c.nome }}</option>
                             </select>
                         </div>
-                        
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Status Inicial</label>
-                            <select v-model="form.status"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border bg-gray-50">
-                                <option value="Orçamento">ORÇAMENTO</option>
-                                <option value="PENDENTE">PENDENTE</option>
-                                <option value="Produção">PRODUÇÃO</option>
+                            <label class="block text-sm font-medium text-gray-700">Status</label>
+                            <select v-model="form.status" class="mt-1 block w-full rounded-md border-gray-300 p-2 border bg-gray-50">
+                                <option value="Orçamento">Em Análise (Orçamento)</option>
+                                <option value="Aprovado">Validado p/ Proposta</option>
                             </select>
                         </div>
                     </div>
                 </div>
 
                 <div class="p-6 border rounded-lg shadow-sm bg-white space-y-6">
-                    <h2 class="text-xl font-semibold text-gray-700">Agrupamento por Cômodo</h2>
+                    <h2 class="text-xl font-bold text-gray-800 border-b pb-2">Detalhamento de Materiais</h2>
                     
-                    <div v-for="(comodo, indexComodo) in form.comodos" :key="indexComodo" class="border p-4 rounded-lg bg-gray-50">
-                        <div class="flex justify-between items-center mb-3">
-                            <input v-model="comodo.comodo" placeholder="Nome do Cômodo (Ex: Cozinha Planejada)" required
-                                class="text-lg font-bold w-full rounded-md border-gray-300 focus:ring-blue-500 p-2" />
-                            <button type="button" @click="removerComodo(indexComodo)" class="text-red-500 hover:text-red-700 ml-4 font-bold">
-                                Remover
-                            </button>
+                    <div v-for="(bloco, idxBloco) in form.blocos" :key="idxBloco" class="border p-4 rounded-lg bg-slate-50 relative">
+                        <div class="flex justify-between items-center mb-4">
+                            <input v-model="bloco.nome" placeholder="Nome do Bloco (Ex: Cozinha)" class="text-lg font-bold w-1/2 rounded-md border-gray-300 p-2" />
+                            <button type="button" @click="removerBloco(idxBloco)" class="text-red-500 text-sm hover:underline">Remover Bloco</button>
                         </div>
 
-                        <table class="min-w-full divide-y divide-gray-200 mt-3">
-                            <thead class="bg-gray-100">
-                                <tr>
-                                    <th class="p-2 text-left text-xs font-medium text-gray-500 uppercase">Descrição</th>
-                                    <th class="p-2 w-20 text-center text-xs font-medium text-gray-500 uppercase">Qtd</th>
-                                    <th class="p-2 w-28 text-right text-xs font-medium text-gray-500 uppercase">Preço Unit.</th>
-                                    <th class="p-2 w-28 text-right text-xs font-medium text-gray-500 uppercase">Subtotal</th>
-                                    <th class="p-2 w-10"></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="(produto, indexProduto) in comodo.produtos" :key="indexProduto">
-                                    <td class="p-2">
-                                        <input v-model="produto.descricao" placeholder="Item..." required class="w-full text-sm border-b border-gray-300 bg-transparent focus:border-blue-500 outline-none" />
-                                    </td>
-                                    <td class="p-2">
-                                        <input v-model.number="produto.quantidade" type="number" step="1" min="1" required class="w-full text-sm text-center border-b border-gray-300 bg-transparent focus:border-blue-500 outline-none" />
-                                    </td>
-                                    <td class="p-2">
-                                        <input v-model.number="produto.preco_unitario" type="number" step="0.01" required class="w-full text-sm text-right border-b border-gray-300 bg-transparent focus:border-blue-500 outline-none" />
-                                    </td>
-                                    <td class="p-2 text-right font-medium text-gray-700">
-                                        {{ formatarMoeda(produto.quantidade * produto.preco_unitario) }}
-                                    </td>
-                                    <td class="p-2">
-                                        <button type="button" @click="removerProduto(indexComodo, indexProduto)" class="text-red-400 hover:text-red-600 font-bold">X</button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-
-                        <button type="button" @click="adicionarProduto(indexComodo)" class="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1">
-                            + Adicionar Produto
-                        </button>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-xs">
+                                <thead class="bg-slate-200 text-slate-700 uppercase font-bold">
+                                    <tr>
+                                        <th class="p-2 text-left w-1/4">Material</th>
+                                        <th class="p-2 text-left">Marca</th>
+                                        <th class="p-2 text-left">Fornecedor</th>
+                                        <th class="p-2 text-center w-16">Qtd</th>
+                                        <th class="p-2 text-right">Preço Un.</th>
+                                        <th class="p-2 text-right">Total</th>
+                                        <th class="p-2 text-center">Data Ref.</th>
+                                        <th class="p-2"></th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200 bg-white">
+                                    <tr v-for="(item, idxItem) in bloco.itens" :key="idxItem">
+                                        <td class="p-1"><input v-model="item.material" placeholder="Ex: MDF Branco" class="w-full border-0 focus:ring-1 focus:ring-blue-500 text-xs" /></td>
+                                        <td class="p-1"><input v-model="item.marca" placeholder="Ex: Arauco" class="w-full border-0 focus:ring-1 focus:ring-blue-500 text-xs" /></td>
+                                        <td class="p-1"><input v-model="item.fornecedor" placeholder="Ex: Revest" class="w-full border-0 focus:ring-1 focus:ring-blue-500 text-xs" /></td>
+                                        <td class="p-1"><input v-model.number="item.qtd" type="number" class="w-full text-center border-0 focus:ring-1 focus:ring-blue-500 text-xs" /></td>
+                                        <td class="p-1"><input v-model.number="item.preco" type="number" step="0.01" class="w-full text-right border-0 focus:ring-1 focus:ring-blue-500 text-xs" /></td>
+                                        <td class="p-1 text-right font-bold text-slate-700">{{ formatarMoeda(item.qtd * item.preco) }}</td>
+                                        <td class="p-1"><input v-model="item.data_ref" type="date" class="w-full text-xs border-0 text-gray-400" /></td>
+                                        <td class="p-1 text-center"><button type="button" @click="removerItem(idxBloco, idxItem)" class="text-red-400 font-bold">x</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <button type="button" @click="adicionarItem(idxBloco)" class="mt-2 text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded hover:bg-blue-200">+ Adicionar Material</button>
                         
-                        <div class="text-right mt-3 pt-3 border-t">
-                            <span class="font-bold text-lg text-slate-700">Total do Cômodo: {{ formatarMoeda(calcularTotalComodo(comodo)) }}</span>
+                        <div class="text-right mt-2 font-bold text-slate-700">
+                            Total Bloco: {{ formatarMoeda(calcularTotalBloco(bloco)) }}
                         </div>
                     </div>
                     
-                    <button type="button" @click="adicionarComodo" class="w-full py-3 border-2 border-dashed border-indigo-300 text-indigo-600 rounded-lg font-medium hover:bg-indigo-50 transition">
-                        + Adicionar Novo Cômodo
+                    <button type="button" @click="adicionarBloco" class="w-full py-3 border-2 border-dashed border-gray-300 text-gray-500 rounded hover:bg-gray-50 font-bold">
+                        + Adicionar Novo Bloco (Cômodo)
                     </button>
                 </div>
 
-                <div class="text-right p-6 border rounded-lg shadow-sm bg-green-50 sticky bottom-4 z-10 shadow-lg">
-                    <h2 class="text-2xl font-extrabold text-green-700">Total Geral: {{ formatarMoeda(calcularTotalGeral) }}</h2>
-                    <button type="submit" :disabled="submitting" 
-                        class="mt-4 bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold shadow-lg disabled:opacity-50 transition transform hover:scale-105">
+                <div class="sticky bottom-4 bg-slate-800 text-white p-4 rounded-lg shadow-xl flex justify-between items-center">
+                    <div>
+                        <p class="text-xs text-gray-400">Total Custo Materiais</p>
+                        <p class="text-2xl font-bold">{{ formatarMoeda(totalGeral) }}</p>
+                    </div>
+                    <button type="submit" :disabled="submitting" class="bg-green-500 hover:bg-green-600 px-6 py-2 rounded font-bold transition">
                         {{ submitting ? 'Salvando...' : '💾 Salvar Orçamento' }}
                     </button>
                 </div>
+
             </form>
         </div>
-        
-        <template #fallback>
-            <div class="text-center py-10 text-gray-600">Carregando formulário...</div>
-        </template>
-    </ClientOnly>
+    </NuxtLayout>
 </template>
 
 <script setup lang="ts">
-definePageMeta({
-    layout: 'dashboard-layout'
-});
-
-const router = useRouter();
 const submitting = ref(false);
 const clientes = ref<any[]>([]);
-const loadingClientes = ref(true);
-const usuarioAtual = ref('Carregando...'); // ✅ Variável para mostrar o nome
-
 const form = ref({
     cliente_id: 0,
     status: 'Orçamento',
-    total: 0,
-    comodos: [
+    blocos: [
         {
-            comodo: 'Cozinha Planejada',
-            produtos: [
-                { descricao: 'MDF Branco TX (15mm)', quantidade: 1, preco_unitario: 0 },
+            nome: 'Cozinha',
+            itens: [
+                { material: 'MDF Branco TX', marca: 'Arauco', fornecedor: 'Revest', qtd: 3, preco: 200, data_ref: new Date().toISOString().split('T')[0] },
+                { material: 'Serviço de Corte', marca: '-', fornecedor: 'Platin', qtd: 25, preco: 20, data_ref: new Date().toISOString().split('T')[0] }
             ]
         }
     ]
 });
 
-// ✅ Função para carregar quem está logado
-const fetchUsuario = async () => {
-    try {
-        const user: any = await $fetch('/api/me');
-        if (user && user.nome) {
-            usuarioAtual.value = user.nome;
-        } else {
-            usuarioAtual.value = 'Desconhecido';
-        }
-    } catch (e) {
-        usuarioAtual.value = 'Erro ao carregar';
-    }
-};
+// UseFetch Clientes... (igual ao anterior)
+const { data: dadosClientes } = await useFetch('/api/clientes');
+if (dadosClientes.value) clientes.value = dadosClientes.value as any[];
 
-const fetchClientes = async () => {
-    loadingClientes.value = true;
-    try {
-        const data: any = await $fetch('/api/clientes');
-        clientes.value = data || [];
-        if (clientes.value.length > 0) {
-            form.value.cliente_id = clientes.value[0].id;
-        }
-    } catch (e) {
-        console.error("Erro ao carregar clientes:", e);
-    } finally {
-        loadingClientes.value = false;
-    }
+// Cálculos
+const calcularTotalBloco = (bloco: any) => {
+    return bloco.itens.reduce((acc: number, item: any) => acc + ((item.qtd || 0) * (item.preco || 0)), 0);
 };
+const totalGeral = computed(() => form.value.blocos.reduce((acc, b) => acc + calcularTotalBloco(b), 0));
 
-const formatarMoeda = (valor: number) => {
-    const numero = Number(valor);
-    if (isNaN(numero)) return 'R$ 0,00';
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(numero);
-};
+const formatarMoeda = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
-const calcularTotalComodo = (comodo: any) => {
-    return comodo.produtos.reduce((sum: number, item: any) => {
-        return sum + ((Number(item.quantidade) || 0) * (Number(item.preco_unitario) || 0));
-    }, 0);
-};
-
-const calcularTotalGeral = computed(() => {
-    return form.value.comodos.reduce((sumGeral: number, comodo: any) => {
-        return sumGeral + calcularTotalComodo(comodo);
-    }, 0);
-});
-
-// Ações do Formulário
-const adicionarComodo = () => {
-    form.value.comodos.push({ comodo: '', produtos: [{ descricao: '', quantidade: 1, preco_unitario: 0 }] });
-};
-const removerComodo = (index: number) => {
-    if (form.value.comodos.length > 1 && confirm('Remover este cômodo e todos os itens?')) {
-        form.value.comodos.splice(index, 1);
-    }
-};
-const adicionarProduto = (indexComodo: number) => {
-    form.value.comodos[indexComodo].produtos.push({ descricao: '', quantidade: 1, preco_unitario: 0 });
-};
-const removerProduto = (indexComodo: number, indexProduto: number) => {
-    if (form.value.comodos[indexComodo].produtos.length > 1) {
-        form.value.comodos[indexComodo].produtos.splice(indexProduto, 1);
-    }
-};
+// Ações de Adicionar/Remover (Lógica padrão de array push/splice)
+const adicionarItem = (idx: number) => form.value.blocos[idx].itens.push({ material: '', marca: '', fornecedor: '', qtd: 1, preco: 0, data_ref: new Date().toISOString().split('T')[0] });
+const removerItem = (idxB: number, idxI: number) => form.value.blocos[idxB].itens.splice(idxI, 1);
+const adicionarBloco = () => form.value.blocos.push({ nome: '', itens: [] });
+const removerBloco = (idx: number) => form.value.blocos.splice(idx, 1);
 
 const submitOrcamento = async () => {
-    const total = calcularTotalGeral.value;
-
-    if (!form.value.cliente_id || total <= 0) {
-        alert('Selecione um cliente e adicione itens ao orçamento.');
-        return;
-    }
-
+    if(!form.value.cliente_id) return alert('Selecione o cliente');
     submitting.value = true;
-
-    // Transforma dados para o Backend
-  const itensParaSalvar = form.value.comodos.flatMap(grupo => {
-        // 1. Limpa o nome do cômodo (remove quebras de linha e espaços extras)
-        let nomeComodo = (grupo.comodo || 'Geral').toString();
-        
-        // Remove caracteres especiais indesejados (como bullets • ou quebras de linha)
-        nomeComodo = nomeComodo.replace(/[\•\t\n\r]/g, '').trim(); 
-        
-        // Se ficou vazio depois de limpar, volta para Geral
-        if (!nomeComodo) nomeComodo = 'Geral';
-
-        return grupo.produtos.map(produto => ({
-            comodo: nomeComodo, // ✅ Usa o nome limpo
-            descricao: produto.descricao,
-            quantidade: produto.quantidade,
-            preco_unitario: produto.preco_unitario,
-            preco_venda: Number(produto.preco_unitario) * Number(produto.quantidade),
-            multiplicador: 1.0 
+    
+    // Transforma para o formato do banco
+    const itensFlat = form.value.blocos.flatMap(bloco => 
+        bloco.itens.map(item => ({
+            comodo: bloco.nome || 'Geral',
+            descricao: item.material,
+            marca: item.marca,             // Novo Campo
+            fornecedor: item.fornecedor,   // Novo Campo
+            quantidade: item.qtd,
+            preco_unitario: item.preco,
+            data_atualizacao_preco: item.data_ref, // Novo Campo
+            // Preço venda inicial igual custo (markup será aplicado depois)
+            preco_venda: item.qtd * item.preco 
         }))
-    });
-    console.log("Itens sendo enviados:", itensParaSalvar);
+    );
 
     try {
-        const response: any = await $fetch('/api/pedidos', {
+        await $fetch('/api/pedidos', {
             method: 'POST',
             body: {
                 cliente_id: form.value.cliente_id,
                 status: form.value.status,
-                valor_total: total,
-                itens: itensParaSalvar
+                valor_total: totalGeral.value,
+                itens: itensFlat
             }
         });
-
-        alert(`Orçamento #${response.id} criado com sucesso!`);
-        router.push('/pedidos');
-    } catch (e: any) {
-        console.error(e);
-        alert(`Erro: ${e.response?._data?.message || e.message}`);
+        navigateTo('/pedidos');
+    } catch (e) {
+        alert('Erro ao salvar');
     } finally {
         submitting.value = false;
     }
-};
-
-onMounted(() => {
-    fetchClientes();
-    fetchUsuario(); // ✅ Chama a função ao carregar a página
-});
+}
 </script>
