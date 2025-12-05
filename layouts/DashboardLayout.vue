@@ -11,33 +11,38 @@
       <nav class="flex-1 px-2 py-6 space-y-1 overflow-y-auto">
         
         <NuxtLink to="/" class="nav-item group flex items-center px-4 py-3 text-sm font-medium rounded-r-md transition-all duration-200 text-gray-400 hover:bg-slate-800 hover:text-white">
-          <svg class="w-5 h-5 mr-3 text-center group-hover:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+          <svg class="w-5 h-5 mr-3 group-hover:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
           Dashboard
         </NuxtLink>
 
         <NuxtLink to="/pedidos" class="nav-item group flex items-center px-4 py-3 text-sm font-medium rounded-r-md transition-all duration-200 text-gray-400 hover:bg-slate-800 hover:text-white">
-          <svg class="w-5 h-5 mr-3 text-center group-hover:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+          <svg class="w-5 h-5 mr-3 group-hover:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
           Pedidos (Orçamentos)
         </NuxtLink>
 
         <NuxtLink to="/produtos/importar" class="nav-item group flex items-center px-4 py-3 text-sm font-medium rounded-r-md transition-all duration-200 text-gray-400 hover:bg-slate-800 hover:text-white">
-          <svg class="w-5 h-5 mr-3 text-center group-hover:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+          <svg class="w-5 h-5 mr-3 group-hover:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
           Importar Tabela
         </NuxtLink>
 
         <NuxtLink to="/clientes" class="nav-item group flex items-center px-4 py-3 text-sm font-medium rounded-r-md transition-all duration-200 text-gray-400 hover:bg-slate-800 hover:text-white">
-          <svg class="w-5 h-5 mr-3 text-center group-hover:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+          <svg class="w-5 h-5 mr-3 group-hover:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
           Clientes
         </NuxtLink>
 
         <NuxtLink to="/produtos" class="nav-item group flex items-center px-4 py-3 text-sm font-medium rounded-r-md transition-all duration-200 text-gray-400 hover:bg-slate-800 hover:text-white">
-          <svg class="w-5 h-5 mr-3 text-center group-hover:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+          <svg class="w-5 h-5 mr-3 group-hover:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
           Produtos
         </NuxtLink>
 
         <NuxtLink to="/financeiro" class="nav-item group flex items-center px-4 py-3 text-sm font-medium rounded-r-md transition-all duration-200 text-gray-400 hover:bg-slate-800 hover:text-white">
-          <svg class="w-5 h-5 mr-3 text-center group-hover:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <svg class="w-5 h-5 mr-3 group-hover:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
           Financeiro
+        </NuxtLink>
+
+        <NuxtLink to="/admin/usuarios" class="nav-item group flex items-center px-4 py-3 text-sm font-medium rounded-r-md transition-all duration-200 text-gray-400 hover:bg-slate-800 hover:text-white">
+          <svg class="w-5 h-5 mr-3 group-hover:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+          Equipe (Admin)
         </NuxtLink>
 
       </nav>
@@ -73,10 +78,10 @@
           </button>
 
           <div class="flex items-center space-x-3 border-l pl-4 border-gray-200 dark:border-gray-700">
-             <img src="https://ui-avatars.com/api/?name=Admin+User&background=f97316&color=fff" alt="User" class="h-8 w-8 rounded-full shadow-sm">
+             <img :src="`https://ui-avatars.com/api/?name=${usuario.nome}&background=f97316&color=fff`" alt="User" class="h-8 w-8 rounded-full shadow-sm">
              <div class="hidden md:block text-sm">
-                <p class="font-bold text-gray-700 dark:text-gray-200 leading-none">Administrador</p>
-                <p class="text-xs text-gray-400 mt-1">admin@netmark.com</p>
+                <p class="font-bold text-gray-700 dark:text-gray-200 leading-none">{{ usuario.nome }}</p>
+                <p class="text-xs text-gray-400 mt-1">{{ usuario.email }}</p>
              </div>
           </div>
         </div>
@@ -94,6 +99,28 @@
 const colorMode = useColorMode();
 const cookie = useCookie('usuario_sessao'); 
 
+// Estado reativo para os dados do usuário
+const usuario = ref({ nome: 'Usuário', email: '...' });
+
+// Ao montar, decodifica o token para mostrar o nome real
+if (cookie.value) {
+    try {
+        const base64Url = cookie.value.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        
+        const payload = JSON.parse(jsonPayload);
+        usuario.value = {
+            nome: payload.nome || 'Usuário',
+            email: payload.email || ''
+        };
+    } catch (e) {
+        console.error('Erro ao ler usuario', e);
+    }
+}
+
 function toggleTheme() {
     colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark';
 }
@@ -105,7 +132,6 @@ function logout() {
 </script>
 
 <style scoped>
-/* Estilo para o link ativo */
 .router-link-active {
   background-color: rgba(255, 255, 255, 0.1); 
   border-left: 4px solid #f97316; 
