@@ -5,70 +5,62 @@ const sql = postgres(process.env.DATABASE_URL as string)
 
 export default defineEventHandler(async (event) => {
     const body = await readBody(event)
-    // body espera: { pedido_id, entrada, forma_entrada, num_parcelas, valor_parcela, forma_parcelas, data_inicio }
+    // body: { pedido_id, entrada, forma_entrada, num_parcelas, valor_parcela, forma_parcelas, data_inicio }
 
     if (!body.pedido_id) throw createError({ statusCode: 400, message: 'Pedido obrigatório' })
 
     try {
-        // 1. Atualiza Status do Pedido para VENDA
+        // 1. Atualiza Status do Pedido
         await sql`UPDATE pedidos SET status = 'VENDA' WHERE id = ${body.pedido_id}`
 
-        // 2. Limpa lançamentos anteriores (para evitar duplicidade ao regravar)
+        // 2. Limpa lançamentos anteriores
         await sql`DELETE FROM financeiro WHERE pedido_id = ${body.pedido_id}`
 
-        // 3. Lança a ENTRADA (Se houver valor > 0)
+        // 3. LANÇA A ENTRADA / PAGAMENTO À VISTA (Se houver valor)
+        // Obs: Entrada é considerada "Caixa Realizado" (PAGO)
         if (body.entrada > 0) {
             await sql`
                 INSERT INTO financeiro (
-                    pedido_id, 
-                    descricao, 
-                    valor, 
-                    data_vencimento, 
-                    data_pagamento, 
-                    status, 
-                    forma_pagamento
+                    pedido_id, descricao, valor, data_vencimento, data_pagamento, status, forma_pagamento
                 ) VALUES (
                     ${body.pedido_id}, 
-                    'Entrada (Sinal)', 
+                    'Entrada / Pagamento Inicial', 
                     ${body.entrada}, 
                     CURRENT_DATE, 
                     CURRENT_DATE, 
                     'PAGO', 
-                    ${body.forma_entrada || 'OUTROS'}
+                    ${body.forma_entrada}
                 )
             `
         }
 
-        // 4. Lança as PARCELAS
-        if (body.num_parcelas > 0) {
-            const hoje = new Date(body.data_inicio || new Date());
+        // 4. LANÇA O RESTANTE / PARCELAMENTO (Se houver parcelas)
+        // Obs: Parcelas são "A Receber" (PENDENTE)
+        if (body.num_parcelas > 0 && body.valor_parcela > 0) {
+            const dataBase = new Date(body.data_inicio || new Date());
             
             for (let i = 1; i <= body.num_parcelas; i++) {
-                // Calcula vencimento: Data Escolhida + Meses
-                const dataVenc = new Date(hoje);
+                const dataVenc = new Date(dataBase);
+                // Se a entrada foi 0 e é a 1ª parcela, usa a data exata. Se não, soma meses.
+                // Lógica simples: data definida + (i - 1) meses
                 dataVenc.setMonth(dataVenc.getMonth() + (i - 1));
 
                 await sql`
                     INSERT INTO financeiro (
-                        pedido_id, 
-                        descricao, 
-                        valor, 
-                        data_vencimento, 
-                        status, 
-                        forma_pagamento
+                        pedido_id, descricao, valor, data_vencimento, status, forma_pagamento
                     ) VALUES (
                         ${body.pedido_id}, 
                         ${`Parcela ${i}/${body.num_parcelas}`}, 
                         ${body.valor_parcela}, 
                         ${dataVenc.toISOString().split('T')[0]}, 
                         'PENDENTE', 
-                        ${body.forma_parcelas || 'BOLETO'}
+                        ${body.forma_parcelas}
                     )
                 `
             }
         }
 
-        return { success: true, message: 'Financeiro gerado com detalhes de pagamento!' }
+        return { success: true, message: 'Financeiro gerado com sucesso!' }
 
     } catch (e: any) {
         throw createError({ statusCode: 500, message: e.message })
