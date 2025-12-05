@@ -1,8 +1,9 @@
-// server/api/pedidos/[id].delete.ts
-
-// Apenas importamos as ferramentas do H3. 
-// NÃO importe o 'sql'. O Nuxt injeta ele automaticamente em arquivos .ts
+// Importa o H3
 import { defineEventHandler, createError } from 'h3';
+
+// 👇 AQUI ESTÁ A CORREÇÃO. Importamos manualmente usando caminho relativo.
+// Isso obriga o servidor a encontrar o arquivo, sem depender da mágica do Nuxt.
+import { sql } from '../../utils/db'; 
 
 export default defineEventHandler(async (event) => {
   const id = event.context.params?.id;
@@ -16,7 +17,6 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    // O 'sql' será reconhecido automaticamente agora
     const [pedidoDeletado] = await sql`
       DELETE FROM pedidos
       WHERE id = ${id}
@@ -47,4 +47,4 @@ export default defineEventHandler(async (event) => {
       statusMessage: 'Erro interno ao tentar deletar o pedido.',
     });
   }
-})
+});
