@@ -1,40 +1,47 @@
-import * as pdfjsLib from 'pdfjs-dist';
-// Importa o Canvas de forma especial para funcionar no Node.js
-import { createCanvas } from 'canvas';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+import toBase64 from 'pdf-to-base64'; // Biblioteca simples Node.js
 
-// Configura o worker para o pdfjs-dist
-// OBS: Você pode precisar ajustar o caminho para o arquivo worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdfjs-dist/build/pdf.worker.js';
-
+/**
+ * Converte um PDF (Buffer) em uma imagem Base64.
+ *
+ * NOTA: Esta biblioteca de JS Puro geralmente requer salvar o arquivo temporariamente.
+ * Ela é menos robusta que o 'canvas', mas evita erros de compilação C++.
+ *
+ * @param pdfBuffer O buffer binário do arquivo PDF.
+ * @returns A string Base64 da imagem da primeira página (ou todo o PDF como imagem única).
+ */
 export async function convertPdfToBase64(pdfBuffer: Buffer): Promise<string> {
-    const data = new Uint8Array(pdfBuffer);
-    const loadingTask = pdfjsLib.getDocument({ data });
+    const tempFilePath = path.join(os.tmpdir(), `temp_orcamento_${Date.now()}.pdf`);
     
+    // 1. Salvar o buffer no disco temporariamente (necessário para esta biblioteca)
     try {
-        const pdf = await loadingTask.promise;
-        const page = await pdf.getPage(1); // Pega a primeira página
-        
-        const viewport = page.getViewport({ scale: 2.0 }); // Escala para maior resolução
-        const canvas = createCanvas(viewport.width, viewport.height);
-        const context = canvas.getContext('2d');
+        fs.writeFileSync(tempFilePath, pdfBuffer);
+    } catch (error) {
+        throw new Error("Falha ao salvar o arquivo PDF temporário.");
+    }
 
-        // Renderiza a página no canvas
-        await page.render({
-            canvasContext: context,
-            viewport: viewport,
-        }).promise;
+    try {
+        // 2. Converter o arquivo salvo para Base64 da imagem
+        // Esta biblioteca usa uma API ou um método interno que evita dependências externas
+        // e retorna a imagem Base64 do PDF.
+        const base64Image = await toBase64(tempFilePath);
 
-        // Converte o canvas para Base64 (formato PNG)
-        const base64Image = canvas.toDataURL('image/png').split(';base64,').pop();
+        // 3. Remover o arquivo temporário
+        fs.unlinkSync(tempFilePath);
 
-        if (!base64Image) {
-            throw new Error("Falha ao converter Canvas para Base64.");
-        }
-        
+        // O GPT-4V precisa do Base64 da imagem, não do PDF.
+        // A função 'toBase64' aqui retorna a imagem (PNG/JPG) codificada em Base64.
         return base64Image;
 
     } catch (error) {
-        console.error("Erro na conversão PDF para Base64 (pdfjs + canvas):", error);
-        throw new Error("Falha ao processar o PDF. Verifique a compatibilidade do 'canvas' com a Hostinger.");
+        // Garante que o arquivo temporário seja removido mesmo em caso de erro
+        if (fs.existsSync(tempFilePath)) {
+            fs.unlinkSync(tempFilePath);
+        }
+        
+        console.error("Erro na conversão PDF para Base64 (pdf-to-base64):", error);
+        throw new Error("Falha ao processar o PDF. Pode ser necessário usar uma API de terceiros.");
     }
 }
