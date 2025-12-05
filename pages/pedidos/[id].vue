@@ -238,49 +238,79 @@
       </div>
 
       <div v-if="mostrarModalFin" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 print:hidden">
-         <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 transform transition-all scale-100">
-            <h2 class="text-xl font-bold text-slate-800 mb-1">Fechar Venda & Financeiro</h2>
-            <p class="text-sm text-gray-500 mb-6">Valor Total: <span class="font-bold text-green-600">{{ formatarMoeda(totalFinal) }}</span></p>
+         <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 transform transition-all scale-100">
+            <h2 class="text-xl font-bold text-slate-800 mb-1">💰 Fechar Venda & Financeiro</h2>
+            <p class="text-sm text-gray-500 mb-6 border-b pb-4">
+                Valor Total da Venda: <span class="font-bold text-green-600 text-lg">{{ formatarMoeda(totalFinal) }}</span>
+            </p>
 
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase">Entrada (Pix/Dinheiro)</label>
-                    <div class="relative">
-                        <span class="absolute left-3 top-2 text-gray-400">R$</span>
-                        <input type="number" v-model.number="fin.entrada" class="w-full pl-8 p-2 border rounded font-bold text-slate-700 focus:ring-2 focus:ring-green-500 outline-none" />
+            <div class="space-y-6">
+                
+                <div class="bg-gray-50 p-4 rounded border border-gray-200">
+                    <p class="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-green-500"></span> 1. Entrada / Sinal
+                    </p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Valor R$</label>
+                            <input type="number" v-model.number="fin.entrada" class="w-full p-2 border rounded font-bold text-slate-700 outline-none focus:border-green-500" />
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Forma Pagto</label>
+                            <select v-model="fin.formaEntrada" class="w-full p-2 border rounded bg-white text-sm font-medium">
+                                <option value="PIX">Pix</option>
+                                <option value="DINHEIRO">Dinheiro</option>
+                                <option value="DEBITO">Débito</option>
+                                <option value="TRANSFERENCIA">Transferência</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
-                <div class="bg-gray-50 p-4 rounded border">
-                    <div class="flex justify-between text-sm mb-2">
-                        <span class="text-gray-600">Restante:</span>
-                        <span class="font-bold">{{ formatarMoeda(Math.max(0, totalFinal - fin.entrada)) }}</span>
+                <div class="bg-gray-50 p-4 rounded border border-gray-200">
+                    <div class="flex justify-between items-center mb-3">
+                        <p class="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-blue-500"></span> 2. Restante a Parcelar
+                        </p>
+                        <span class="text-sm font-bold text-slate-700">{{ formatarMoeda(Math.max(0, totalFinal - fin.entrada)) }}</span>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-3 gap-3">
                         <div>
-                            <label class="block text-xs font-bold text-gray-500">Nº Parcelas</label>
+                            <label class="block text-xs text-gray-400 mb-1">Parcelas</label>
                             <input type="number" v-model.number="fin.parcelas" min="1" max="24" class="w-full p-2 border rounded font-bold text-center" />
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-500">1º Vencimento</label>
+                            <label class="block text-xs text-gray-400 mb-1">Forma</label>
+                            <select v-model="fin.formaParcelas" class="w-full p-2 border rounded bg-white text-sm font-medium">
+                                <option value="CARTAO_CREDITO">Crédito</option>
+                                <option value="BOLETO">Boleto</option>
+                                <option value="CHEQUE">Cheque</option>
+                                <option value="PROMISSORIA">Promissória</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">1º Vencimento</label>
                             <input type="date" v-model="fin.dataInicio" class="w-full p-2 border rounded text-xs" />
                         </div>
                     </div>
                 </div>
 
-                <div class="text-center p-3 bg-blue-50 text-blue-800 rounded text-sm font-medium">
-                    <span v-if="fin.parcelas > 0 && (totalFinal - fin.entrada) > 0">
-                        {{ fin.parcelas }}x de {{ formatarMoeda((totalFinal - fin.entrada) / fin.parcelas) }}
-                    </span>
-                    <span v-else>Pagamento à Vista</span>
+                <div class="text-center p-3 bg-blue-50 text-blue-800 rounded text-sm font-medium border border-blue-100">
+                    <div v-if="fin.parcelas > 0 && (totalFinal - fin.entrada) > 0">
+                        {{ fin.parcelas }}x de <span class="font-bold">{{ formatarMoeda((totalFinal - fin.entrada) / fin.parcelas) }}</span> 
+                        no {{ fin.formaParcelas === 'CARTAO_CREDITO' ? 'Cartão' : 'Boleto' }}
+                    </div>
+                    <div v-else class="text-green-700 font-bold">
+                        Pagamento à Vista / Sem Parcelamento
+                    </div>
                 </div>
             </div>
 
             <div class="mt-6 flex gap-3">
-                <button @click="mostrarModalFin = false" class="flex-1 py-3 text-gray-500 font-bold hover:bg-gray-100 rounded">Cancelar</button>
-                <button @click="confirmarFechamento" :disabled="salvando" class="flex-1 py-3 bg-green-600 text-white font-bold rounded shadow hover:bg-green-700 disabled:opacity-50">
-                    {{ salvando ? 'Processando...' : '✅ Confirmar' }}
+                <button @click="mostrarModalFin = false" class="flex-1 py-3 text-gray-500 font-bold hover:bg-gray-100 rounded">Voltar</button>
+                <button @click="confirmarFechamento" :disabled="salvando" class="flex-1 py-3 bg-green-600 text-white font-bold rounded shadow hover:bg-green-700 disabled:opacity-50 transition transform hover:scale-[1.02]">
+                    {{ salvando ? 'Gerando...' : '✅ Confirmar Venda' }}
                 </button>
             </div>
          </div>
@@ -304,24 +334,26 @@ const modoCorteUnico = ref(false);
 const fatorMultiplicador = ref(1.0);
 const descricoesBlocos = ref<Record<string, string>>({});
 
-// Estados Financeiros (NOVO)
+// Estados Financeiros (ATUALIZADO)
 const mostrarModalFin = ref(false);
 const fin = ref({
     entrada: 0,
+    formaEntrada: 'PIX', // Padrão
     parcelas: 1,
+    formaParcelas: 'CARTAO_CREDITO', // Padrão
     dataInicio: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0]
 });
 
 const TEXTO_PADRAO = `Móveis planejados 100% MDF. Ferragens com amortecimento e instalação inclusa.`;
 
-// --- FUNÇÃO FINANCEIRA (NOVO) ---
+// --- FUNÇÃO FINANCEIRA ---
 const abrirModalFinanceiro = () => {
     fin.value.entrada = totalFinal.value * 0.4; // Sugere 40% de entrada
     mostrarModalFin.value = true;
 };
 
 const confirmarFechamento = async () => {
-    if (!confirm('Isso irá fechar o pedido e gerar o financeiro. Confirmar?')) return;
+    if (!confirm('Isso vai lançar o financeiro detalhado e fechar a venda. Confirma?')) return;
     salvando.value = true;
     try {
         const restante = totalFinal.value - fin.value.entrada;
@@ -330,14 +362,16 @@ const confirmarFechamento = async () => {
             body: {
                 pedido_id: id,
                 entrada: fin.value.entrada,
+                forma_entrada: fin.value.formaEntrada, // Envia o tipo
                 num_parcelas: fin.value.parcelas,
                 valor_parcela: fin.value.parcelas > 0 ? restante / fin.value.parcelas : 0,
+                forma_parcelas: fin.value.formaParcelas, // Envia o tipo
                 data_inicio: fin.value.dataInicio
             }
         });
-        alert('Venda fechada com sucesso! Financeiro gerado.');
+        alert('Venda fechada com sucesso! Financeiro lançado.');
         mostrarModalFin.value = false;
-        // navigateTo('/dashboard'); // Descomente se quiser ir pro dashboard
+        // navigateTo('/dashboard'); // Descomente se quiser
     } catch (e: any) {
         alert('Erro: ' + e.message);
     } finally {
