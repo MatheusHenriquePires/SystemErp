@@ -1,17 +1,13 @@
-// Arquivo: server/api/pedidos/[id].delete.ts
+// server/api/pedidos/[id].delete.ts
 
-// 1. Import do H3 (padrão do servidor)
+// Apenas importamos as ferramentas do H3. 
+// NÃO importe o 'sql'. O Nuxt injeta ele automaticamente em arquivos .ts
 import { defineEventHandler, createError } from 'h3';
 
-// 2. Import do banco usando o alias da raiz (funciona em arquivos .ts)
-// O Nuxt vai achar o arquivo seja ele db.js ou db.ts
-import { sql } from '~/server/utils/db'; 
-
 export default defineEventHandler(async (event) => {
-  // O contexto pode vir como string, forçamos a tipagem ou validação
   const id = event.context.params?.id;
 
-  // Validação: Garante que é número
+  // Validação
   if (!id || !/^\d+$/.test(id)) {
     throw createError({
       statusCode: 400,
@@ -20,6 +16,7 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
+    // O 'sql' será reconhecido automaticamente agora
     const [pedidoDeletado] = await sql`
       DELETE FROM pedidos
       WHERE id = ${id}
@@ -50,4 +47,4 @@ export default defineEventHandler(async (event) => {
       statusMessage: 'Erro interno ao tentar deletar o pedido.',
     });
   }
-});
+})
