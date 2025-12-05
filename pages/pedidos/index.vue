@@ -2,7 +2,6 @@
   <DashboardLayout>
     <div class="px-4 py-6 md:px-6 md:py-8 lg:px-8">
       
-      <!-- Cabeçalho -->
       <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <h1 class="text-3xl font-bold text-gray-900">📦 Gestão de Pedidos</h1>
         <NuxtLink to="/pedidos/novo" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-2">
@@ -10,7 +9,6 @@
         </NuxtLink>
       </div>
 
-      <!-- Abas de Filtro -->
       <div class="flex space-x-2 mb-6 overflow-x-auto pb-2 border-b border-gray-200">
         <button v-for="aba in abas" :key="aba.key"
           @click="mudarAba(aba.key)"
@@ -25,7 +23,6 @@
         </button>
       </div>
 
-      <!-- Tabela -->
       <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
         <div class="min-w-full overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
@@ -55,14 +52,13 @@
                 </td>
               </tr>
               
-              <tr v-for="pedido in pedidos" :key="pedido.id" class="hover:bg-gray-50 transition duration-150">
+              <tr v-for="pedido in pedidos" :key="pedido.id" class="hover:bg-gray-50 transition duration-150 group">
                 <td class="px-6 py-4 text-sm font-mono font-bold text-gray-900">#{{ pedido.id }}</td>
                 
                 <td class="px-6 py-4 text-sm text-gray-700 font-medium">
                   {{ pedido.nome_cliente || pedido.cliente_nome }}
                 </td>
                 
-                <!-- COLUNA RESPONSÁVEL -->
                 <td class="px-6 py-4 text-sm text-gray-500">
                     <div class="flex items-center gap-2">
                         <div class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 uppercase">
@@ -82,50 +78,58 @@
 
                 <td class="px-6 py-4 text-center">
                   <span :class="[
-                    'px-3 py-1 text-xs font-bold rounded-full uppercase tracking-wide',
-                    classesStatus[pedido.status] || 'bg-gray-100 text-gray-800'
+                    'px-3 py-1 text-xs font-bold rounded-full uppercase tracking-wide border',
+                    classesStatus[pedido.status] || 'bg-gray-100 text-gray-800 border-gray-200'
                   ]">
                     {{ pedido.status }}
                   </span>
                 </td>
 
                 <td class="px-6 py-4 text-center text-sm">
-                  <div class="flex justify-center space-x-2">
+                  <div class="flex justify-center items-center space-x-2">
                     
-                    <!-- Botões de Ação -->
                     <button 
                       v-if="['Orçamento', 'ORCAMENTO'].includes(pedido.status)" 
                       @click="atualizarStatus(pedido.id, 'PROPOSTA')"
-                      class="text-white bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded-md text-xs font-medium shadow-sm transition"
+                      class="text-white bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded-md text-xs font-medium shadow-sm transition flex items-center gap-1"
                       title="Mover para Proposta"
                     >
-                      ➡️ Enviar
+                      ➡️ <span class="hidden xl:inline">Enviar</span>
                     </button>
 
                     <button 
                       v-if="['PROPOSTA', 'PENDENTE'].includes(pedido.status)" 
                       @click="atualizarStatus(pedido.id, 'VENDA')"
-                      class="text-white bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-md text-xs font-medium shadow-sm transition"
+                      class="text-white bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-md text-xs font-medium shadow-sm transition flex items-center gap-1"
                       title="Aprovar Venda"
                     >
-                      ✅ Aprovar
+                      ✅ <span class="hidden xl:inline">Aprovar</span>
                     </button>
 
                     <button 
                       v-if="['VENDA', 'Produção'].includes(pedido.status)" 
                       @click="atualizarStatus(pedido.id, 'PAGO')"
-                      class="text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-md text-xs font-medium shadow-sm transition"
+                      class="text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-md text-xs font-medium shadow-sm transition flex items-center gap-1"
                       title="Marcar como Pago"
                     >
-                      💰 Receber
+                      💰 <span class="hidden xl:inline">Receber</span>
                     </button>
 
                     <NuxtLink 
                       :to="`/pedidos/${pedido.id}`"
                       class="text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 px-3 py-1.5 rounded-md text-xs font-medium shadow-sm flex items-center gap-1 transition"
+                      title="Ver Detalhes"
                     >
-                      👁️ Ver
+                      👁️
                     </NuxtLink>
+
+                    <button 
+                      @click="excluirPedido(pedido.id)"
+                      class="text-red-500 bg-white border border-red-200 hover:bg-red-50 px-2 py-1.5 rounded-md text-xs font-medium shadow-sm flex items-center justify-center transition"
+                      title="Excluir Pedido"
+                    >
+                      🗑️
+                    </button>
 
                   </div>
                 </td>
@@ -146,16 +150,14 @@ const pedidos = ref([]);
 const loading = ref(true);
 const filtroAtual = ref('TODOS');
 
-// ✅ CORREÇÃO: Usar chaves em MAIÚSCULO para padronizar com o banco
 const abas = [
   { key: 'TODOS', label: 'Todos' },
-  { key: 'Orçamento', label: '📝 Orçamento' }, // Tentei mudar para 'Orçamento' (com Ç e O maiúsculo apenas)
+  { key: 'Orçamento', label: '📝 Orçamento' }, 
   { key: 'PROPOSTA', label: '📢 Propostas' },
   { key: 'VENDA', label: '📦 Vendas' },
   { key: 'PAGO', label: '✅ Finalizados' }
 ];
 
-// ✅ CORREÇÃO: Mapear todas as variações de status para garantir a cor
 const classesStatus: Record<string, string> = {
   'Orçamento': 'bg-yellow-50 text-yellow-700 border-yellow-200',
   'ORCAMENTO': 'bg-yellow-50 text-yellow-700 border-yellow-200',
@@ -169,7 +171,6 @@ const classesStatus: Record<string, string> = {
 const carregarPedidos = async () => {
   loading.value = true;
   try {
-    console.log(`Carregando aba: ${filtroAtual.value}`);
     const data: any = await $fetch(`/api/pedidos?status=${filtroAtual.value}`);
     pedidos.value = data || [];
   } catch (error) {
@@ -186,16 +187,27 @@ const mudarAba = (novoStatus: string) => {
 
 const atualizarStatus = async (id: number, novoStatus: string) => {
   if(!confirm(`Deseja alterar o status para ${novoStatus}?`)) return;
-  
   try {
-    await $fetch('/api/pedidos', {
-        method: 'PUT',
-        body: { id, status: novoStatus }
-    });
+    await $fetch('/api/pedidos', { method: 'PUT', body: { id, status: novoStatus } });
     await carregarPedidos();
-  } catch (e) {
-    alert('Erro ao atualizar status.');
-  }
+  } catch (e) { alert('Erro ao atualizar status.'); }
+};
+
+// --- NOVO: FUNÇÃO DE EXCLUIR ---
+const excluirPedido = async (id: number) => {
+    if (!confirm('ATENÇÃO: Tem certeza que deseja EXCLUIR este pedido?\nIsso apagará também os itens e o financeiro dele.')) return;
+
+    try {
+        await $fetch('/api/pedidos/delete', {
+            method: 'POST',
+            body: { id }
+        });
+        // Remove da lista visualmente sem recarregar tudo
+        pedidos.value = pedidos.value.filter((p: any) => p.id !== id);
+        // Ou recarrega tudo para garantir: await carregarPedidos();
+    } catch (e: any) {
+        alert('Erro ao excluir: ' + e.message);
+    }
 };
 
 const formatarMoeda = (val: any) => {
