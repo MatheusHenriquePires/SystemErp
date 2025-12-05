@@ -41,16 +41,13 @@ export default defineEventHandler(async (event) => {
     // --- PUT: Editar Cliente ---
     if (method === 'PUT') {
         const body = await readBody(event);
-        
         try {
-            // Verifica se a tabela tem coluna endereço, se não tiver, remova a linha abaixo
             await sql`
                 UPDATE clientes SET
                     nome = ${body.nome},
                     email = ${body.email},
                     telefone = ${body.telefone},
                     cidade = ${body.cidade}
-                    -- endereco = ${body.endereco || null} -- Descomente se tiver criado essa coluna
                 WHERE id = ${id} AND empresa_id = ${payload.empresa_id}
             `;
             return { success: true, message: 'Cliente atualizado!' };
@@ -65,7 +62,7 @@ export default defineEventHandler(async (event) => {
             await sql`DELETE FROM clientes WHERE id = ${id} AND empresa_id = ${payload.empresa_id}`;
             return { success: true };
         } catch (error: any) {
-            // Código 23503 = Violação de chave estrangeira (Cliente tem pedidos)
+            // Código 23503 = Cliente tem pedidos vinculados (Foreign Key)
             if (error.code === '23503') {
                 throw createError({ statusCode: 409, message: 'Não é possível excluir: Este cliente possui histórico de vendas.' });
             }
