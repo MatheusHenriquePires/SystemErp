@@ -91,7 +91,10 @@ const salvarCliente = async () => {
                 <span v-else class="text-gray-400">-</span>
               </td>
               <td class="p-4 text-right">
-                <button class="text-gray-400 hover:text-orange-600 font-medium text-sm">Editar</button>
+                <!-- 👇 CORREÇÃO: Link para a página de detalhes -->
+                <NuxtLink :to="`/clientes/${cliente.id}`" class="text-blue-600 hover:text-blue-800 font-bold text-sm transition cursor-pointer">
+                    Editar
+                </NuxtLink>
               </td>
             </tr>
             
