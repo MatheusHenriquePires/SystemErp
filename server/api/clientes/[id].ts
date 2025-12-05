@@ -25,7 +25,7 @@ export default defineEventHandler(async (event) => {
 
             // 2. Histórico de Pedidos (Vendas/Orçamentos)
             const historico = await sql`
-                SELECT id, data_criacao, valor_total, status, vendedor_id 
+                SELECT id, data_criacao, valor_total, status
                 FROM pedidos 
                 WHERE cliente_id = ${id} AND empresa_id = ${payload.empresa_id}
                 ORDER BY id DESC
