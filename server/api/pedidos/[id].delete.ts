@@ -1,9 +1,9 @@
-// Importa o H3
 import { defineEventHandler, createError } from 'h3';
 
-// 👇 AQUI ESTÁ A CORREÇÃO. Importamos manualmente usando caminho relativo.
-// Isso obriga o servidor a encontrar o arquivo, sem depender da mágica do Nuxt.
-import { sql } from '../../utils/db'; 
+// 👇 CORREÇÃO FINAL:
+// 1. Removemos as chaves { } pois é um export default.
+// 2. Apontamos para '../../database' (sai de 'pedidos', sai de 'api', chega em 'server')
+import sql from '../../database'; 
 
 export default defineEventHandler(async (event) => {
   const id = event.context.params?.id;
