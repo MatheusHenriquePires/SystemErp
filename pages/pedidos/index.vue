@@ -30,7 +30,7 @@
               <tr>
                 <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">ID</th>
                 <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Cliente</th>
-                <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Responsável</th>
+                <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Última Edição</th>
                 <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Data</th>
                 <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Total</th>
                 <th class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
@@ -58,13 +58,20 @@
                 <td class="px-6 py-4 text-sm text-gray-700 font-medium">
                   {{ pedido.nome_cliente || pedido.cliente_nome }}
                 </td>
-                
+
                 <td class="px-6 py-4 text-sm text-gray-500">
-                    <div class="flex items-center gap-2">
-                        <div class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 uppercase">
-                            {{ (pedido.vendedor_nome || 'S')[0] }}
+                    <div class="flex flex-col">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold px-2 py-0.5 rounded bg-gray-100 text-gray-600">
+                                {{ pedido.atualizador_nome ? 'Editado por' : 'Criado por' }}
+                            </span>
                         </div>
-                        <span class="truncate max-w-[150px] font-medium">{{ pedido.vendedor_nome || 'Sistema' }}</span>
+                        <span class="font-medium text-gray-800 mt-1">
+                            {{ pedido.atualizador_nome || pedido.vendedor_nome || 'Sistema' }}
+                        </span>
+                        <span v-if="pedido.updated_at" class="text-xs text-gray-400">
+                            {{ new Date(pedido.updated_at).toLocaleDateString('pt-BR') }}
+                        </span>
                     </div>
                 </td>
 
@@ -146,7 +153,7 @@
 <script setup lang="ts">
 import DashboardLayout from '~/layouts/DashboardLayout.vue';
 
-const pedidos = ref<any[]>([]); // Tipagem básica para array
+const pedidos = ref<any[]>([]);
 const loading = ref(true);
 const filtroAtual = ref('TODOS');
 
@@ -188,26 +195,19 @@ const mudarAba = (novoStatus: string) => {
 const atualizarStatus = async (id: number, novoStatus: string) => {
   if(!confirm(`Deseja alterar o status para ${novoStatus}?`)) return;
   try {
+    // Aqui vai disparar o PUT que salva o usuário atual
     await $fetch('/api/pedidos', { method: 'PUT', body: { id, status: novoStatus } });
     await carregarPedidos();
   } catch (e) { alert('Erro ao atualizar status.'); }
 };
 
-// --- FUNÇÃO DE EXCLUIR CORRIGIDA ---
 const excluirPedido = async (id: number) => {
     if (!confirm('ATENÇÃO: Tem certeza que deseja EXCLUIR este pedido?\nIsso apagará também os itens e o financeiro dele.')) return;
 
     try {
-        // CORREÇÃO: Usar crases (`) e a variável correta (id)
-        await $fetch(`/api/pedidos/${id}`, {
-            method: 'DELETE'
-        });
-        
-        // Remove da lista visualmente
+        await $fetch(`/api/pedidos/${id}`, { method: 'DELETE' });
         pedidos.value = pedidos.value.filter((p: any) => p.id !== id);
-        
     } catch (e: any) {
-        // Tenta pegar a mensagem de erro do servidor ou usa a genérica
         const msg = e.data?.statusMessage || e.message || 'Erro desconhecido';
         alert('Erro ao excluir: ' + msg);
     }
