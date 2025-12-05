@@ -1,14 +1,17 @@
-// 1. Importa funções básicas do servidor
+// Arquivo: server/api/pedidos/[id].delete.ts
+
+// 1. Import do H3 (padrão do servidor)
 import { defineEventHandler, createError } from 'h3';
 
-// 2. Importa o 'sql' explicitamente do sistema interno do Nuxt
-// Isso resolve o erro "sql is not defined"
-import { sql } from '#imports';
+// 2. Import do banco usando o alias da raiz (funciona em arquivos .ts)
+// O Nuxt vai achar o arquivo seja ele db.js ou db.ts
+import { sql } from '~/server/utils/db'; 
 
 export default defineEventHandler(async (event) => {
-  const id = event.context.params.id;
+  // O contexto pode vir como string, forçamos a tipagem ou validação
+  const id = event.context.params?.id;
 
-  // Validação
+  // Validação: Garante que é número
   if (!id || !/^\d+$/.test(id)) {
     throw createError({
       statusCode: 400,
@@ -17,7 +20,6 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    // Agora o 'sql' vai funcionar
     const [pedidoDeletado] = await sql`
       DELETE FROM pedidos
       WHERE id = ${id}
@@ -36,7 +38,7 @@ export default defineEventHandler(async (event) => {
       message: `Pedido ${id} removido com sucesso.`,
     };
 
-  } catch (error) {
+  } catch (error: any) {
     if (error.statusCode) {
       throw error;
     }
