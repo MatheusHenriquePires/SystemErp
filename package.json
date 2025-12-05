@@ -16,6 +16,7 @@
     "apexcharts": "^5.3.6",
     "bcryptjs": "^3.0.3",
     "formidable": "^3.5.4",
+    "html2pdf.js": "^0.12.1",
     "jsonwebtoken": "^9.0.2",
     "openai": "^6.10.0",
     "pdf-parse": "^2.4.5",

@@ -1,8 +1,8 @@
 <template>
   <NuxtLayout name="dashboard-layout">
-    <div class="max-w-5xl mx-auto my-8 p-8 bg-white shadow-xl print:shadow-none print:m-0 print:p-0 print:w-full">
+    <div class="max-w-5xl mx-auto my-8 p-8 bg-white shadow-xl print:shadow-none print:m-0 print:p-0 print:w-full" id="area-impressao">
       
-      <div class="mb-6 flex flex-col md:flex-row justify-between items-center gap-4 print:hidden bg-gray-50 p-4 rounded-lg border border-gray-200">
+      <div data-html2canvas-ignore="true" class="mb-6 flex flex-col md:flex-row justify-between items-center gap-4 print:hidden bg-gray-50 p-4 rounded-lg border border-gray-200">
         <div class="flex items-center gap-3">
             <NuxtLink to="/pedidos" class="text-gray-600 hover:text-blue-600 font-medium transition">
                 &larr; Voltar
@@ -58,8 +58,17 @@
                 />
             </div>
 
+            <button 
+                @click="gerarPDF" 
+                :disabled="gerandoPDF"
+                class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold shadow-md transition flex items-center gap-2 disabled:opacity-50"
+            >
+                <span v-if="gerandoPDF" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                <span v-else>📄 PDF</span>
+            </button>
+
             <button @click="imprimir" class="bg-gray-800 hover:bg-black text-white px-4 py-2 rounded-lg font-bold shadow-md transition flex items-center gap-2">
-                🖨️ Imprimir
+                🖨️
             </button>
         </div>
       </div>
@@ -67,7 +76,7 @@
       <div v-if="loading" class="text-center py-20 text-gray-500">Carregando proposta...</div>
       <div v-else-if="!data" class="text-center text-red-500 py-10">Pedido não encontrado.</div>
       
-      <div v-else class="space-y-6 text-slate-800 font-sans">
+      <div v-else class="space-y-6 text-slate-800 font-sans" id="conteudo-orcamento">
 
         <header class="flex justify-between items-start border-b-2 border-slate-800 pb-6 mb-8">
             <div class="flex items-center gap-4">
@@ -88,7 +97,7 @@
         </header>
 
         <div v-if="modoCliente">
-            <div v-for="(grupo, nomeComodo) in itensAgrupados" :key="nomeComodo" class="mb-10 break-inside-avoid">
+            <div v-for="(grupo, nomeComodo) in itensAgrupados" :key="nomeComodo" class="mb-10 break-inside-avoid page-break">
                 <div class="flex justify-between items-end border-b-2 border-slate-200 pb-2 mb-4">
                     <h2 class="text-xl font-extrabold text-slate-800 uppercase tracking-wide flex items-center gap-2">
                         <span class="w-2 h-6 bg-slate-800 block"></span>
@@ -101,7 +110,7 @@
                     </div>
                 </div>
                 <div class="pl-4 pr-4">
-                    <p class="text-xs text-gray-400 font-bold mb-1 print:hidden uppercase">Descrição Comercial:</p>
+                    <p class="text-xs text-gray-400 font-bold mb-1 print:hidden uppercase" data-html2canvas-ignore="true">Descrição Comercial:</p>
                     <textarea 
                         v-model="descricoesBlocos[nomeComodo]" 
                         rows="4"
@@ -221,6 +230,13 @@
                 <p class="text-4xl font-black text-green-700">{{ formatarMoeda(totalFinal) }}</p>
             </div>
           </div>
+          <div v-if="modoCliente" class="mt-16 text-center">
+            <p class="text-sm font-bold text-slate-800 mb-2">Condições Gerais</p>
+            <p class="text-xs text-gray-500 max-w-2xl mx-auto leading-relaxed">
+                Este orçamento tem validade de 10 dias. Pagamento em até 12x (consulte condições).
+                Entrega e montagem inclusas.
+            </p>
+          </div>
         </footer>
 
       </div>
@@ -236,16 +252,43 @@ const id = route.params.id;
 const data = ref<any>(null);
 const loading = ref(true);
 const salvando = ref(false);
+const gerandoPDF = ref(false); // NOVO
 const modoCliente = ref(true); 
-const modoCorteUnico = ref(false); // NOVO: Controla a visão de Corte
+const modoCorteUnico = ref(false); 
 const fatorMultiplicador = ref(1.0);
 const descricoesBlocos = ref<Record<string, string>>({});
 
 const TEXTO_PADRAO = `Móveis planejados 100% MDF. Ferragens com amortecimento e instalação inclusa.`;
 
+// --- FUNÇÃO DE PDF (NOVO) ---
+const gerarPDF = async () => {
+    // 1. Força o modo cliente para o PDF sair limpo
+    modoCliente.value = true;
+    modoCorteUnico.value = false;
+    gerandoPDF.value = true;
+
+    // 2. Importa a biblioteca dinamicamente (para não dar erro no Nuxt)
+    // @ts-ignore
+    const html2pdf = (await import('html2pdf.js')).default;
+
+    // 3. Configurações do PDF
+    const element = document.getElementById('area-impressao');
+    const opt = {
+        margin:       [10, 10, 10, 10], // Margens (top, left, bottom, right)
+        filename:     `Orcamento_Arboreo_${id}_${data.value.cliente_nome}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true }, // Scale 2 melhora a qualidade
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    // 4. Gera e Salva
+    await html2pdf().set(opt).from(element).save();
+    
+    gerandoPDF.value = false;
+};
+
 // --- CÁLCULOS ---
 
-// Agrupa por AMBIENTE (Visão Montador)
 const itensAgrupados = computed(() => {
     if (!data.value || !data.value.itens) return {};
     return data.value.itens.reduce((acc: any, item: any) => {
@@ -260,26 +303,21 @@ const itensAgrupados = computed(() => {
     }, {});
 });
 
-// Agrupa por MATERIAL (Visão Corte Único) - NOVO!
 const itensCorteUnico = computed(() => {
     if (!data.value || !data.value.itens) return [];
     
     const mapa = new Map();
-
     data.value.itens.forEach((item: any) => {
-        // Cria uma chave única baseada no nome + marca (para não misturar materiais diferentes)
         const chave = (item.descricao + item.marca).trim().toLowerCase();
-
         if (!mapa.has(chave)) {
             mapa.set(chave, {
                 descricao: item.descricao,
                 marca: item.marca,
                 qtdTotal: 0,
                 custoTotal: 0,
-                locais: new Set() // Para saber onde esse material é usado
+                locais: new Set()
             });
         }
-
         const entry = mapa.get(chave);
         entry.qtdTotal += Number(item.quantidade) || 0;
         entry.custoTotal += (Number(item.quantidade) || 0) * (Number(item.preco_unitario) || 0);
@@ -288,7 +326,7 @@ const itensCorteUnico = computed(() => {
 
     return Array.from(mapa.values()).map((i: any) => ({
         ...i,
-        locais: Array.from(i.locais) // Converte Set para Array para exibir
+        locais: Array.from(i.locais)
     }));
 });
 
@@ -303,7 +341,7 @@ const totalFinal = computed(() => totalBase.value * fatorMultiplicador.value);
 
 const alternarModoCliente = () => {
     modoCliente.value = !modoCliente.value;
-    if (modoCliente.value) modoCorteUnico.value = false; // Reseta ao voltar pro cliente
+    if (modoCliente.value) modoCorteUnico.value = false;
 };
 
 const adicionarItem = (comodo: string) => {
@@ -333,7 +371,6 @@ const salvarTudo = async () => {
 };
 
 const imprimir = () => {
-    // Se estiver em corte único, imprime a lista técnica. Se não, imprime orçamento.
     if (!modoCorteUnico.value) modoCliente.value = true;
     setTimeout(() => window.print(), 200);
 };
@@ -363,5 +400,10 @@ onMounted(fetchData);
   body { background: white; -webkit-print-color-adjust: exact; }
   .shadow-xl { box-shadow: none !important; }
   textarea { border: none; resize: none; overflow: hidden; }
+}
+
+/* Quebra de página automática no PDF se ficar muito grande */
+.page-break {
+    page-break-inside: avoid;
 }
 </style>
