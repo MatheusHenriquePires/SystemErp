@@ -1,4 +1,4 @@
-import { defineEventHandler, readMultipart, createError } from 'h3';
+import { defineEventHandler, readMultipartFormData, createError } from 'h3';
 import OpenAI from 'openai';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -11,11 +11,18 @@ const openai = new OpenAI({
 
 export default defineEventHandler(async (event) => {
     // 1. Receber o arquivo PDF do Frontend
-    const data = await readMultipart(event);
+    // CORREÇÃO: Usando readMultipartFormData em vez de readMultipart
+    const data = await readMultipartFormData(event);
+
+    // Se não houver dados ou array vazio
+    if (!data || data.length === 0) {
+        throw createError({ statusCode: 400, message: 'Arquivo PDF não enviado.' });
+    }
+
     const filePart = data.find(p => p.name === 'file');
 
     if (!filePart || !filePart.data) {
-        throw createError({ statusCode: 400, message: 'Arquivo PDF não enviado.' });
+        throw createError({ statusCode: 400, message: 'Campo "file" ausente ou vazio.' });
     }
 
     // Salva temporariamente para enviar à OpenAI
@@ -31,8 +38,8 @@ export default defineEventHandler(async (event) => {
 
         // 3. Criar e Rodar uma Thread (Processo de análise)
         const run = await openai.beta.threads.createAndRun({
-            assistant_id: "", // Se você tiver um assistente criado, coloque o ID aqui. Senão, definimos as instruções abaixo.
-            model: "gpt-4o", // O GPT-4o é o melhor para ler arquivos
+            assistant_id: "", // Se tiver ID, coloque aqui
+            model: "gpt-4o", 
             thread: {
                 messages: [
                     {
@@ -48,7 +55,7 @@ export default defineEventHandler(async (event) => {
                 Você é um especialista em extração de dados de orçamentos de marcenaria.
                 Analise o arquivo PDF fornecido. Extraia todos os produtos listados nas tabelas.
                 
-                Retorne ESTRITAMENTE um objeto JSON com a seguinte estrutura, sem markdown (backticks):
+                Retorne ESTRITAMENTE um objeto JSON com a seguinte estrutura, sem markdown:
                 {
                     "items": [
                         { "name": "Descrição do item", "cost": 10.50, "markup": 30 }
@@ -56,24 +63,24 @@ export default defineEventHandler(async (event) => {
                 }
                 
                 Regras:
-                - "cost" deve ser o preço unitário ou total da linha. Se for "R$ 220,00", converta para number 220.00.
-                - "markup" deve ser sempre 30 (padrão).
+                - "cost" deve ser o preço unitário ou total da linha. Converta "R$ 220,00" para number 220.00.
+                - "markup" deve ser sempre 30.
                 - Ignore itens com preço 0,00.
             `,
-            tools: [{ type: "file_search" }] // Habilita a leitura do arquivo
+            tools: [{ type: "file_search" }] 
         });
 
         // 4. Polling: Aguardar a resposta da OpenAI
         let runStatus = await openai.beta.threads.runs.retrieve(run.thread_id, run.id);
 
-        // Aguarda até completar (máximo 60 segundos para evitar timeout do navegador)
         let attempts = 0;
+        // Aumentei o timeout para dar tempo à IA ler o arquivo (máx ~60s)
         while (runStatus.status !== "completed" && attempts < 30) {
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Espera 2s
+            await new Promise(resolve => setTimeout(resolve, 2000));
             runStatus = await openai.beta.threads.runs.retrieve(run.thread_id, run.id);
             
             if (runStatus.status === "failed" || runStatus.status === "cancelled") {
-                throw new Error("Falha no processamento da IA: " + runStatus.last_error?.message);
+                throw new Error("Falha no processamento da IA: " + (runStatus.last_error?.message || 'Erro desconhecido'));
             }
             attempts++;
         }
@@ -88,14 +95,13 @@ export default defineEventHandler(async (event) => {
             throw new Error("A IA não retornou texto válido.");
         }
 
-        // 6. Limpeza: Deletar o arquivo da OpenAI para não ocupar espaço
+        // 6. Limpeza: Deletar o arquivo da OpenAI
         try {
             await openai.files.del(file.id);
         } catch (err) { console.error("Erro ao deletar arquivo OpenAI:", err); }
 
         // 7. Parse do JSON
         let jsonStr = lastMessage.content[0].text.value;
-        // Limpa possíveis blocos de código Markdown (```json ... ```)
         jsonStr = jsonStr.replace(/```json/g, '').replace(/```/g, '').trim();
         
         const result = JSON.parse(jsonStr);
