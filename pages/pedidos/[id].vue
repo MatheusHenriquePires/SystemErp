@@ -42,10 +42,16 @@
       <div v-else-if="!data" class="text-center text-red-500 py-10">Pedido não encontrado.</div>
       
       <div v-else class="space-y-6 text-slate-800 font-sans" id="conteudo-orcamento">
+        
         <header class="flex justify-between items-start border-b-2 border-slate-800 pb-6 mb-8">
             <div class="flex items-center gap-4">
-                <img src="/logo1.jpeg" alt="Logo" class="h-24 w-auto object-contain" onerror="this.style.display='none'"/>
-                <div><h1 class="text-2xl font-black text-slate-900 uppercase">Arbóreo</h1><p class="text-sm text-gray-500">Soluções em Ambientes Planejados</p></div>
+                <div class="flex items-center gap-2">
+                    <svg class="w-12 h-12 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                    <div>
+                        <h1 class="text-2xl font-black text-slate-900 uppercase tracking-tighter">Arbóreo</h1>
+                        <p class="text-xs font-bold text-gray-500 tracking-widest uppercase">Ambientes Planejados</p>
+                    </div>
+                </div>
             </div>
             <div class="text-right">
                 <div class="bg-slate-100 p-3 rounded-lg print:bg-transparent print:p-0">
@@ -60,33 +66,91 @@
         <div v-if="modoCliente">
             <div v-for="(grupo, nomeComodo) in itensAgrupados" :key="nomeComodo" class="mb-10 break-inside-avoid page-break">
                 <div class="flex justify-between items-end border-b-2 border-slate-200 pb-2 mb-4">
-                    <h2 class="text-xl font-extrabold text-slate-800 uppercase flex items-center gap-2"><span class="w-2 h-6 bg-slate-800 block"></span> {{ nomeComodo }}</h2>
+                    <h2 class="text-xl font-extrabold text-slate-800 uppercase flex items-center gap-2">
+                        <span class="w-2 h-6 bg-slate-800 block"></span> {{ nomeComodo }}
+                    </h2>
                     <span class="text-xl font-bold text-slate-900">{{ formatarMoeda(grupo.subtotal * fatorMultiplicador) }}</span>
                 </div>
-                <div class="pl-4 pr-4"><textarea v-model="descricoesBlocos[nomeComodo]" rows="4" class="w-full text-sm text-gray-600 border-none bg-transparent resize-none"></textarea></div>
+                <div class="pl-4 pr-4">
+                    <textarea v-model="descricoesBlocos[nomeComodo]" rows="4" class="w-full text-sm text-gray-600 border-none bg-transparent resize-none focus:ring-0" placeholder="Descrição do ambiente..."></textarea>
+                </div>
             </div>
         </div>
+
         <div v-else-if="!modoCorteUnico">
             <div v-for="(grupo, nomeComodo) in itensAgrupados" :key="nomeComodo" class="mb-8 border rounded-lg overflow-hidden bg-white shadow-sm">
-                <h3 class="bg-gray-100 p-3 font-bold text-gray-700 border-b flex justify-between items-center"><span>{{ nomeComodo }}</span><span class="text-xs bg-white px-2 py-1 rounded border text-gray-500">Custo: {{ formatarMoeda(grupo.subtotal) }}</span></h3>
+                <h3 class="bg-gray-100 p-3 font-bold text-gray-700 border-b flex justify-between items-center">
+                    <span>{{ nomeComodo }}</span>
+                    <span class="text-xs bg-white px-2 py-1 rounded border text-gray-500">Custo: {{ formatarMoeda(grupo.subtotal) }}</span>
+                </h3>
                 <table class="w-full text-xs text-left">
-                    <thead class="bg-gray-50 text-gray-500 uppercase font-semibold"><tr><th class="p-3 w-1/3">Material</th><th class="p-3">Marca</th><th class="p-3">Forn.</th><th class="p-3 text-center w-16">Qtd</th><th class="p-3 text-right">Custo Un.</th><th class="p-3 text-right">Total</th><th class="p-3 text-center"></th></tr></thead>
-                    <tbody class="divide-y divide-gray-100"><tr v-for="(item, idx) in grupo.itens" :key="idx" class="hover:bg-gray-50 group"><td class="p-1"><input v-model="item.descricao" class="w-full border-0 bg-transparent font-medium" /></td><td class="p-1"><input v-model="item.marca" class="w-full border-0 bg-transparent" placeholder="-" /></td><td class="p-1"><input v-model="item.fornecedor" class="w-full border-0 bg-transparent" placeholder="-" /></td><td class="p-1"><input type="number" v-model.number="item.quantidade" class="w-full text-center border-0 bg-transparent font-bold text-blue-600" /></td><td class="p-1"><input type="number" step="0.01" v-model.number="item.preco_unitario" class="w-full text-right border-0 bg-transparent font-bold text-gray-700" /></td><td class="p-3 text-right font-bold text-gray-800">{{ formatarMoeda((item.quantidade||0)*(item.preco_unitario||0)) }}</td><td class="p-1 text-center"><button @click="removerItem(item)" class="text-red-300 hover:text-red-600 font-bold">×</button></td></tr></tbody>
+                    <thead class="bg-gray-50 text-gray-500 uppercase font-semibold">
+                        <tr>
+                            <th class="p-3 w-1/3">Material</th>
+                            <th class="p-3">Marca</th>
+                            <th class="p-3">Forn.</th>
+                            <th class="p-3 text-center w-16">Qtd</th>
+                            <th class="p-3 text-right">Custo Un.</th>
+                            <th class="p-3 text-right">Total</th>
+                            <th class="p-3 text-center"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <tr v-for="(item, idx) in grupo.itens" :key="idx" class="hover:bg-gray-50 group">
+                            <td class="p-1"><input v-model="item.descricao" class="w-full border-0 bg-transparent font-medium focus:ring-1 focus:ring-blue-200 rounded px-1" /></td>
+                            <td class="p-1"><input v-model="item.marca" class="w-full border-0 bg-transparent focus:ring-1 focus:ring-blue-200 rounded px-1" placeholder="-" /></td>
+                            <td class="p-1"><input v-model="item.fornecedor" class="w-full border-0 bg-transparent focus:ring-1 focus:ring-blue-200 rounded px-1" placeholder="-" /></td>
+                            <td class="p-1"><input type="number" v-model.number="item.quantidade" class="w-full text-center border-0 bg-transparent font-bold text-blue-600 focus:ring-1 focus:ring-blue-200 rounded px-1" /></td>
+                            <td class="p-1"><input type="number" step="0.01" v-model.number="item.preco_unitario" class="w-full text-right border-0 bg-transparent font-bold text-gray-700 focus:ring-1 focus:ring-blue-200 rounded px-1" /></td>
+                            <td class="p-3 text-right font-bold text-gray-800">{{ formatarMoeda((item.quantidade||0)*(item.preco_unitario||0)) }}</td>
+                            <td class="p-1 text-center"><button @click="removerItem(item)" class="text-red-300 hover:text-red-600 font-bold">×</button></td>
+                        </tr>
+                    </tbody>
                 </table>
-                <div class="bg-gray-50 p-2 border-t flex justify-start"><button @click="adicionarItem(nomeComodo)" class="text-xs flex items-center gap-1 text-blue-600 font-bold hover:bg-blue-100 px-3 py-1 rounded transition">+ Item</button></div>
+                <div class="bg-gray-50 p-2 border-t flex justify-start">
+                    <button @click="adicionarItem(nomeComodo)" class="text-xs flex items-center gap-1 text-blue-600 font-bold hover:bg-blue-100 px-3 py-1 rounded transition">+ Item</button>
+                </div>
             </div>
             <button @click="adicionarNovoAmbiente" class="w-full py-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 font-bold hover:bg-gray-50 hover:border-gray-400 hover:text-blue-600 transition mb-8">+ Criar Novo Ambiente</button>
         </div>
+
         <div v-else>
-            <div class="border rounded-lg overflow-hidden bg-white shadow-sm"><table class="w-full text-sm text-left"><thead class="bg-gray-800 text-white uppercase font-semibold"><tr><th class="p-3 w-1/3">Material</th><th class="p-3">Marca</th><th class="p-3 text-center">Locais</th><th class="p-3 text-center w-24">Qtd Total</th><th class="p-3 text-right w-32">Total Custo</th></tr></thead><tbody class="divide-y divide-gray-200"><tr v-for="(material, idx) in itensCorteUnico" :key="idx" class="hover:bg-orange-50"><td class="p-3 font-bold text-gray-800">{{ material.descricao }}</td><td class="p-3 text-gray-500">{{ material.marca }}</td><td class="p-3 text-center text-xs text-gray-500"><span v-for="loc in material.locais" :key="loc" class="inline-block bg-gray-100 px-2 py-0.5 rounded mr-1 mb-1 border">{{ loc }}</span></td><td class="p-3 text-center font-black text-lg text-blue-600 bg-blue-50">{{ material.qtdTotal }}</td><td class="p-3 text-right font-bold text-gray-700">{{ formatarMoeda(material.custoTotal) }}</td></tr></tbody></table></div>
+            <div class="border rounded-lg overflow-hidden bg-white shadow-sm">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-gray-800 text-white uppercase font-semibold">
+                        <tr>
+                            <th class="p-3 w-1/3">Material</th>
+                            <th class="p-3">Marca</th>
+                            <th class="p-3 text-center">Locais</th>
+                            <th class="p-3 text-center w-24">Qtd Total</th>
+                            <th class="p-3 text-right w-32">Total Custo</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        <tr v-for="(material, idx) in itensCorteUnico" :key="idx" class="hover:bg-orange-50">
+                            <td class="p-3 font-bold text-gray-800">{{ material.descricao }}</td>
+                            <td class="p-3 text-gray-500">{{ material.marca }}</td>
+                            <td class="p-3 text-center text-xs text-gray-500">
+                                <span v-for="loc in material.locais" :key="loc" class="inline-block bg-gray-100 px-2 py-0.5 rounded mr-1 mb-1 border">{{ loc }}</span>
+                            </td>
+                            <td class="p-3 text-center font-black text-lg text-blue-600 bg-blue-50">{{ material.qtdTotal }}</td>
+                            <td class="p-3 text-right font-bold text-gray-700">{{ formatarMoeda(material.custoTotal) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <footer class="mt-12 pt-6 border-t-2 border-slate-800 break-inside-avoid">
           <div class="flex flex-col md:flex-row justify-end items-center gap-6">
             <div v-if="!modoCliente" class="text-right text-sm text-gray-500 space-y-1 bg-gray-50 p-3 rounded">
-                <p>Custo: {{ formatarMoeda(totalBase) }}</p><p class="text-green-600">Margem: {{ formatarMoeda(totalFinal - totalBase) }}</p>
+                <p>Custo: {{ formatarMoeda(totalBase) }}</p>
+                <p class="text-green-600">Margem: {{ formatarMoeda(totalFinal - totalBase) }}</p>
             </div>
-            <div class="text-right"><p class="text-sm text-gray-500 uppercase font-bold tracking-wider mb-1">Valor Final</p><p class="text-4xl font-black text-green-700">{{ formatarMoeda(totalFinal) }}</p></div>
+            <div class="text-right">
+                <p class="text-sm text-gray-500 uppercase font-bold tracking-wider mb-1">Valor Final</p>
+                <p class="text-4xl font-black text-green-700">{{ formatarMoeda(totalFinal) }}</p>
+            </div>
           </div>
         </footer>
       </div>
@@ -99,7 +163,6 @@
             </p>
 
             <div class="space-y-6">
-                
                 <div class="bg-gray-50 p-4 rounded border border-gray-200">
                     <p class="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-green-500"></span> 1. Pagar Agora (Entrada / Total)
@@ -184,7 +247,7 @@
 const route = useRoute();
 const id = route.params.id;
 
-// --- LISTA UNIFICADA DE PAGAMENTOS ---
+// --- LISTA DE PAGAMENTOS ---
 const opcoesPagamento = [
     { label: 'Pix', value: 'PIX' },
     { label: 'Cartão de Crédito', value: 'CARTAO_CREDITO' },
@@ -226,7 +289,7 @@ const restante = computed(() => Math.max(0, totalFinal.value - fin.value.entrada
 
 // --- AÇÕES FINANCEIRAS ---
 const abrirModalFinanceiro = () => {
-    fin.value.entrada = totalFinal.value * 0.4; // Sugere 40%
+    fin.value.entrada = totalFinal.value * 0.4; // Sugere 40% de entrada
     mostrarModalFin.value = true;
 };
 
@@ -250,11 +313,12 @@ const confirmarFechamento = async () => {
         });
         alert('Venda confirmada com sucesso! 🚀');
         mostrarModalFin.value = false;
+        fetchData(); // Recarrega os dados (pode atualizar status)
     } catch (e: any) { alert('Erro: ' + e.message); } 
     finally { salvando.value = false; }
 };
 
-// --- DEMAIS FUNÇÕES (Mantidas do original para funcionar PDF/Cortes/Etc) ---
+// --- DEMAIS FUNÇÕES (Mantidas do original) ---
 const gerarPDF = async () => {
     modoCliente.value = true;
     modoCorteUnico.value = false;
@@ -298,7 +362,6 @@ const adicionarItem = (comodo: string) => { data.value.itens.push({ id: null, pe
 const adicionarNovoAmbiente = () => { const nome = prompt("Nome do novo ambiente:"); if (nome) adicionarItem(nome.toUpperCase()); };
 const removerItem = (item: any) => { if(confirm("Remover?")) data.value.itens = data.value.itens.filter((i: any) => i !== item); };
 const salvarTudo = async () => { salvando.value = true; try { await $fetch('/api/pedidos', { method: 'PUT', body: { id: id, valor_total: totalFinal.value, itens: data.value.itens } }); alert('Salvo!'); fetchData(); } catch (e: any) { alert('Erro: ' + e.message); } finally { salvando.value = false; } };
-const imprimir = () => { if (!modoCorteUnico.value) modoCliente.value = true; setTimeout(() => window.print(), 200); };
 const fetchData = async () => { try { const res: any = await $fetch(`/api/pedidos/${id}`); data.value = res; if (data.value?.valor_total) { const custo = data.value.itens.reduce((s:number, i:any) => s + (Number(i.quantidade)*Number(i.preco_unitario)), 0); if (custo > 0) fatorMultiplicador.value = Number((Number(data.value.valor_total) / custo).toFixed(2)); } } catch (e) { console.error(e); } finally { loading.value = false; } };
 const formatarMoeda = (val: any) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(val) || 0);
 const formatarData = (d: string) => { try { return new Date(d).toLocaleDateString('pt-BR'); } catch { return ''; } };
