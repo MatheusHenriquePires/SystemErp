@@ -8,16 +8,26 @@
                 &larr; Voltar
             </NuxtLink>
             <div class="h-6 w-px bg-gray-300"></div>
+            
             <button 
                 @click="modoCliente = !modoCliente"
                 :class="modoCliente ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 border border-gray-300'"
                 class="px-4 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-2"
             >
-                {{ modoCliente ? '👀 Visão do Cliente' : '🛠️ Visão Técnica' }}
+                {{ modoCliente ? '👀 Visão do Cliente' : '🛠️ Visão Técnica (Editável)' }}
             </button>
         </div>
 
         <div class="flex items-center gap-3">
+             <button 
+                v-if="!modoCliente"
+                @click="salvarTudo"
+                :disabled="salvando"
+                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold shadow-md transition disabled:opacity-50 flex items-center gap-2"
+            >
+                {{ salvando ? 'Salvando...' : '💾 Salvar Alterações' }}
+            </button>
+
              <div class="flex items-center gap-2 bg-yellow-50 px-3 py-2 rounded border border-yellow-200">
                 <span class="text-xs font-bold text-yellow-800 uppercase">Markup:</span>
                 <input 
@@ -60,7 +70,6 @@
 
         <div v-if="modoCliente">
             <div v-for="(grupo, nomeComodo) in itensAgrupados" :key="nomeComodo" class="mb-10 break-inside-avoid">
-                
                 <div class="flex justify-between items-end border-b-2 border-slate-200 pb-2 mb-4">
                     <h2 class="text-xl font-extrabold text-slate-800 uppercase tracking-wide flex items-center gap-2">
                         <span class="w-2 h-6 bg-slate-800 block"></span>
@@ -72,23 +81,23 @@
                         </span>
                     </div>
                 </div>
-
                 <div class="pl-4 pr-4">
-                    <p class="text-xs text-gray-400 font-bold mb-1 print:hidden uppercase">Descrição Técnica (Editável):</p>
+                    <p class="text-xs text-gray-400 font-bold mb-1 print:hidden uppercase">Descrição (Editável):</p>
                     <textarea 
                         v-model="descricoesBlocos[nomeComodo]" 
                         rows="4"
                         class="w-full text-sm text-gray-600 leading-relaxed border-none bg-transparent resize-none focus:ring-0 p-0 text-justify"
                     ></textarea>
                 </div>
-
             </div>
         </div>
 
         <div v-else>
-            <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
-                <p class="text-sm text-blue-800 font-bold">🛠️ Modo Técnico Ativado</p>
-                <p class="text-xs text-blue-600">Esta visão mostra fornecedores, marcas e custos detalhados. Não imprima isso para o cliente.</p>
+            <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 flex justify-between items-center">
+                <div>
+                    <p class="text-sm text-blue-800 font-bold">🛠️ Modo Técnico / Edição</p>
+                    <p class="text-xs text-blue-600">Altere os valores na tabela abaixo e clique em Salvar.</p>
+                </div>
             </div>
 
             <div v-for="(grupo, nomeComodo) in itensAgrupados" :key="nomeComodo" class="mb-8 border rounded-lg overflow-hidden bg-white shadow-sm">
@@ -100,22 +109,39 @@
                 <table class="w-full text-xs text-left">
                     <thead class="bg-gray-50 text-gray-500 uppercase font-semibold">
                         <tr>
-                            <th class="p-3">Material</th>
+                            <th class="p-3 w-1/3">Material</th>
                             <th class="p-3">Marca</th>
                             <th class="p-3">Fornecedor</th>
-                            <th class="p-3 text-center">Qtd</th>
-                            <th class="p-3 text-right">Custo Un.</th>
-                            <th class="p-3 text-right">Total Custo</th>
+                            <th class="p-3 text-center w-16">Qtd</th>
+                            <th class="p-3 text-right w-24">Custo Un.</th>
+                            <th class="p-3 text-right w-24">Total</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
-                        <tr v-for="(item, idx) in grupo.itens" :key="idx" class="hover:bg-gray-50">
-                            <td class="p-3 font-medium text-gray-900">{{ item.descricao }}</td>
-                            <td class="p-3 text-gray-500">{{ item.marca || '-' }}</td>
-                            <td class="p-3 text-gray-500">{{ item.fornecedor || '-' }}</td>
-                            <td class="p-3 text-center">{{ item.quantidade }}</td>
-                            <td class="p-3 text-right text-gray-600">{{ formatarMoeda(item.preco_unitario) }}</td>
-                            <td class="p-3 text-right font-bold text-gray-800">{{ formatarMoeda(item.quantidade * item.preco_unitario) }}</td>
+                        <tr v-for="(item, idx) in grupo.itens" :key="idx" class="hover:bg-gray-50 group">
+                            <td class="p-1">
+                                <input v-model="item.descricao" class="w-full border-0 bg-transparent focus:ring-1 focus:ring-blue-500 rounded px-2 py-1 text-gray-900 font-medium" />
+                            </td>
+                            
+                            <td class="p-1">
+                                <input v-model="item.marca" class="w-full border-0 bg-transparent focus:ring-1 focus:ring-blue-500 rounded px-2 py-1 text-gray-500" placeholder="-" />
+                            </td>
+
+                            <td class="p-1">
+                                <input v-model="item.fornecedor" class="w-full border-0 bg-transparent focus:ring-1 focus:ring-blue-500 rounded px-2 py-1 text-gray-500" placeholder="-" />
+                            </td>
+
+                            <td class="p-1">
+                                <input type="number" v-model.number="item.quantidade" class="w-full text-center border-0 bg-transparent focus:ring-1 focus:ring-blue-500 rounded px-2 py-1 font-bold text-blue-600" />
+                            </td>
+
+                            <td class="p-1">
+                                <input type="number" step="0.01" v-model.number="item.preco_unitario" class="w-full text-right border-0 bg-transparent focus:ring-1 focus:ring-blue-500 rounded px-2 py-1 font-bold text-gray-700" />
+                            </td>
+
+                            <td class="p-3 text-right font-bold text-gray-800">
+                                {{ formatarMoeda(item.quantidade * item.preco_unitario) }}
+                            </td>
                         </tr>
                     </tbody>
                 </table>
@@ -126,12 +152,12 @@
           <div class="flex flex-col md:flex-row justify-end items-center gap-6">
             
             <div v-if="!modoCliente" class="text-right text-sm text-gray-500 space-y-1 bg-gray-50 p-3 rounded">
-                <p>Custo Total: {{ formatarMoeda(totalBase) }}</p>
+                <p>Custo Total (Base): {{ formatarMoeda(totalBase) }}</p>
                 <p class="text-green-600">Lucro Estimado: {{ formatarMoeda(totalFinal - totalBase) }}</p>
             </div>
 
             <div class="text-right">
-                <p class="text-sm text-gray-500 uppercase font-bold tracking-wider mb-1">Valor Total do Investimento</p>
+                <p class="text-sm text-gray-500 uppercase font-bold tracking-wider mb-1">Valor Total</p>
                 <p class="text-4xl font-black text-green-700">{{ formatarMoeda(totalFinal) }}</p>
             </div>
           </div>
@@ -139,8 +165,7 @@
           <div v-if="modoCliente" class="mt-16 text-center">
             <p class="text-sm font-bold text-slate-800 mb-2">Condições Gerais</p>
             <p class="text-xs text-gray-500 max-w-2xl mx-auto leading-relaxed">
-                Este orçamento tem validade de 10 dias. O pagamento pode ser realizado conforme combinado. 
-                A entrega e montagem estão inclusas para a cidade de origem. Alterações no projeto podem implicar em reajuste de valores.
+                Este orçamento tem validade de 10 dias.
             </p>
           </div>
         </footer>
@@ -156,15 +181,15 @@ const id = route.params.id;
 
 const data = ref<any>(null);
 const loading = ref(true);
-const modoCliente = ref(true); // Começa no modo cliente (bonito)
+const salvando = ref(false);
+const modoCliente = ref(true); // Alterna entre tabelas
 const fatorMultiplicador = ref(1.0);
 const descricoesBlocos = ref<Record<string, string>>({});
 
-// Texto Padrão (P3)
-const TEXTO_PADRAO = `Móveis planejados produzidos com materiais de alta qualidade (100% MDF), com ferragens de primeira linha e acabamento impecável. Inclui transporte, entrega e instalação especializada. Garantia total contra defeitos de fabricação. Projeto desenvolvido para aliar funcionalidade, durabilidade e estética.`;
+// Texto Padrão
+const TEXTO_PADRAO = `Móveis planejados produzidos com materiais de alta qualidade (100% MDF), com ferragens de primeira linha e acabamento impecável. Inclui transporte, entrega e instalação especializada.`;
 
-// --- CÁLCULOS E AGRUPAMENTO ---
-
+// Cálculos
 const itensAgrupados = computed(() => {
     if (!data.value || !data.value.itens) return {};
 
@@ -174,8 +199,6 @@ const itensAgrupados = computed(() => {
 
         if (!acc[comodoKey]) {
             acc[comodoKey] = { itens: [], subtotal: 0 };
-            
-            // Se ainda não tem texto para esse bloco, define o padrão
             if (!descricoesBlocos.value[comodoKey]) {
                 descricoesBlocos.value[comodoKey] = `Ambiente ${comodoKey === 'PADRAO' ? 'Geral' : comodoKey}: ${TEXTO_PADRAO}`;
             }
@@ -196,10 +219,30 @@ const totalBase = computed(() => {
 
 const totalFinal = computed(() => totalBase.value * fatorMultiplicador.value);
 
-// --- FUNÇÕES ---
+// --- AÇÕES ---
+
+const salvarTudo = async () => {
+    if (!confirm('Deseja salvar as alterações nos itens e valores?')) return;
+    
+    salvando.value = true;
+    try {
+        await $fetch('/api/pedidos', {
+            method: 'PUT',
+            body: { 
+                id: id,
+                valor_total: totalFinal.value,
+                itens: data.value.itens // Envia os itens modificados
+            }
+        });
+        alert('Dados atualizados com sucesso!');
+    } catch (e: any) {
+        alert('Erro ao salvar: ' + e.message);
+    } finally {
+        salvando.value = false;
+    }
+};
 
 const imprimir = () => {
-    // Garante que está no modo cliente ao imprimir
     modoCliente.value = true;
     setTimeout(() => window.print(), 100);
 }
@@ -220,7 +263,6 @@ const fetchData = async () => {
         const response: any = await $fetch(`/api/pedidos/${id}`);
         data.value = response;
         
-        // Tenta recuperar Markup anterior
         if (data.value && data.value.valor_total) {
             const custo = data.value.itens.reduce((sum:number, i:any) => sum + (Number(i.quantidade)*Number(i.preco_unitario)), 0);
             const venda = Number(data.value.valor_total);
@@ -244,8 +286,6 @@ onMounted(fetchData);
   .break-inside-avoid { break-inside: avoid; }
   body { background: white; -webkit-print-color-adjust: exact; }
   .shadow-xl { box-shadow: none !important; }
-  
-  /* Esconde scrollbar da textarea na impressão */
   textarea { overflow: hidden; resize: none; }
 }
 </style>
