@@ -7,24 +7,46 @@
         <p class="text-gray-500">Bem-vindo ao painel de controle do seu ERP.</p>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex justify-between items-start border-l-4 border-l-green-500">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex justify-between items-start border-l-4 border-l-blue-400">
           <div>
             <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Vendas Hoje</p>
             <h3 class="text-2xl font-extrabold text-slate-800">{{ formatarMoeda(dashboard.vendas_hoje) }}</h3>
-            <p class="text-xs text-green-600 mt-2 font-medium">
-                {{ dashboard.vendas_hoje > 0 ? 'Parabéns pelas vendas!' : 'Vamos vender hoje?' }}
+            <p class="text-xs text-blue-400 mt-2 font-medium">
+                {{ dashboard.vendas_hoje > 0 ? 'Vendas rolando!' : 'Sem vendas ainda' }}
             </p>
           </div>
-          <div class="p-3 bg-green-50 rounded-lg text-green-600">
+          <div class="p-3 bg-blue-50 rounded-lg text-blue-400">
             <span class="text-xl">💲</span>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex justify-between items-start border-l-4 border-l-blue-600">
+          <div>
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Faturamento Mês</p>
+            <h3 class="text-2xl font-extrabold text-slate-800">{{ formatarMoeda(dashboard.faturamento_mes) }}</h3>
+            <p class="text-xs text-blue-600 mt-2 font-medium">Total Bruto</p>
+          </div>
+          <div class="p-3 bg-blue-50 rounded-lg text-blue-600">
+            <span class="text-xl">📈</span>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex justify-between items-start border-l-4 border-l-emerald-500">
+          <div>
+            <p class="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-1">Lucro Líquido</p>
+            <h3 class="text-2xl font-extrabold text-emerald-700">{{ formatarMoeda(dashboard.lucro_mes) }}</h3>
+            <p class="text-xs text-emerald-600 mt-2 font-medium">Dinheiro Real (Caixa)</p>
+          </div>
+          <div class="p-3 bg-emerald-50 rounded-lg text-emerald-600">
+            <span class="text-xl">💰</span>
           </div>
         </div>
 
         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex justify-between items-start border-l-4 border-l-orange-500">
           <div>
-            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Orçamentos Abertos</p>
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Orçamentos</p>
             <h3 class="text-2xl font-extrabold text-slate-800">{{ dashboard.orcamentos_abertos }}</h3>
             <p class="text-xs text-orange-600 mt-2 font-medium">Pendentes de aprovação</p>
           </div>
@@ -33,16 +55,6 @@
           </div>
         </div>
 
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex justify-between items-start border-l-4 border-l-blue-500">
-          <div>
-            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Faturamento Mês</p>
-            <h3 class="text-2xl font-extrabold text-slate-800">{{ formatarMoeda(dashboard.faturamento_mes) }}</h3>
-            <p class="text-xs text-blue-600 mt-2 font-medium">Acumulado este mês</p>
-          </div>
-          <div class="p-3 bg-blue-50 rounded-lg text-blue-600">
-            <span class="text-xl">📈</span>
-          </div>
-        </div>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -59,7 +71,7 @@
 
              <div v-for="(dia, index) in dashboard.grafico" :key="index" class="flex flex-col items-center flex-1 group">
                 <div class="relative w-full flex justify-end flex-col items-center">
-                    <span class="opacity-0 group-hover:opacity-100 absolute -top-8 bg-gray-800 text-white text-xs py-1 px-2 rounded transition mb-1">
+                    <span class="opacity-0 group-hover:opacity-100 absolute -top-8 bg-gray-800 text-white text-xs py-1 px-2 rounded transition mb-1 z-10 whitespace-nowrap">
                         {{ formatarMoeda(dia.total) }}
                     </span>
                     <div 
@@ -98,15 +110,19 @@
 </template>
 
 <script setup lang="ts">
+// Definição reativa dos dados do dashboard
 const dashboard = ref({
     vendas_hoje: 0,
     faturamento_mes: 0,
+    lucro_mes: 0,         // Novo campo para o lucro
     orcamentos_abertos: 0,
     grafico: [] as any[]
 });
 
+// Função que busca os dados no Backend
 const carregarDados = async () => {
     try {
+        // Chama a API que criamos no passo anterior
         const dados: any = await $fetch('/api/dashboard');
         dashboard.value = dados;
     } catch (e) {
@@ -114,18 +130,24 @@ const carregarDados = async () => {
     }
 };
 
-// Altura máxima das barras do gráfico (para proporção)
+// Calcula altura das barras do gráfico (proporção)
 const calcularAltura = (valor: number) => {
+    if (dashboard.value.grafico.length === 0) return 0;
+    
+    // Pega o maior valor para usar como 100% da altura (ou 100 se for tudo zero)
     const max = Math.max(...dashboard.value.grafico.map(d => Number(d.total)), 100);
-    // Escala para caber em 200px de altura max
+    
+    // Regra de três: (valor / maximo) * 200px (altura fixa da div)
     return (Number(valor) / max) * 200;
 };
 
+// Formata para Real Brasileiro (R$ 1.200,50)
 const formatarMoeda = (val: any) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(val));
 };
 
 const emBreve = () => alert('Funcionalidade em desenvolvimento!');
 
+// Carrega assim que a página abre
 onMounted(carregarDados);
 </script>
