@@ -152,7 +152,7 @@
                         @click="adicionarItem(nomeComodo)" 
                         class="text-xs flex items-center gap-1 text-blue-600 font-bold hover:bg-blue-100 px-3 py-1 rounded transition"
                     >
-                        <span class="text-lg">+</span> Adicionar Material
+                        <span class="text-lg">+</span> Adicionar Material em {{ nomeComodo }}
                     </button>
                 </div>
             </div>

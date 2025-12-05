@@ -47,7 +47,7 @@ export default defineEventHandler(async (event) => {
                 `
             } else {
                 // --- INSERT (Se ID é null = Item Novo!) ---
-                // Isso faltava no seu código. Sem isso o "Adicionar Material" não salva.
+                // Isso faltava no seu código anterior.
                 await sql`
                     INSERT INTO pedidos_itens (
                         pedido_id, 
