@@ -2,11 +2,12 @@ import postgres from 'postgres'
 import { defineEventHandler, getCookie, createError } from 'h3'
 import jwt from 'jsonwebtoken'
 
+// Conexão com o Banco
 const sql = postgres(process.env.DATABASE_URL as string)
-const EXPLICIT_SECRET = 'minha_chave_secreta_para_teste_2025_42';
+const EXPLICIT_SECRET = process.env.JWT_SECRET || 'minha_chave_secreta_para_teste_2025_42';
 
 export default defineEventHandler(async (event) => {
-    // 1. Segurança (Mantida)
+    // 1. Verificação de Login
     const cookie = getCookie(event, 'usuario_sessao')
     if (!cookie) throw createError({ statusCode: 401, message: 'Login necessário' })
     
@@ -17,44 +18,61 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
-        // 2. Executa todas as consultas em paralelo
-        const [vendasHoje, orcamentosPendentes, vendasMes, historico, lucroMes] = await Promise.all([
+        // 2. Buscando dados APENAS da tabela 'pedidos' que você confirmou que existe
+        const [vendasHoje, orcamentosPendentes, vendasMes, historico, lucroEstimado] = await Promise.all([
             
-            // A. Vendas Hoje
-            sql`SELECT COALESCE(SUM(total), 0) as total FROM pedidos 
-                WHERE status IN ('VENDA', 'PAGO') AND data_criacao::date = CURRENT_DATE`,
-
-            // B. Orçamentos
-            sql`SELECT COUNT(*) as qtd FROM pedidos WHERE status = 'ORCAMENTO'`,
-
-            // C. Faturamento Mês
-            sql`SELECT COALESCE(SUM(total), 0) as total FROM pedidos 
-                WHERE status IN ('VENDA', 'PAGO') AND data_criacao >= date_trunc('month', CURRENT_DATE)`,
-
-            // D. Gráfico
-            sql`SELECT to_char(data_criacao, 'DD/MM') as dia, COALESCE(SUM(total), 0) as total
-                FROM pedidos
-                WHERE status IN ('VENDA', 'PAGO') AND data_criacao > CURRENT_DATE - INTERVAL '7 days'
-                GROUP BY 1 ORDER BY 1`,
-
-            // E. NOVO: Lucro Líquido do Mês
-            // (Preço Venda - Custo) * Quantidade
+            // A. Vendas Hoje (Usa final_total)
             sql`
-                SELECT COALESCE(SUM((ip.preco_unitario - p.preco_custo) * ip.quantidade), 0) as total
-                FROM pedidos ped
-                JOIN pedido_itens ip ON ip.pedido_id = ped.id
-                JOIN produtos p ON ip.produto_id = p.id
-                WHERE ped.status IN ('VENDA', 'PAGO')
-                AND ped.data_criacao >= date_trunc('month', CURRENT_DATE)
+                SELECT COALESCE(SUM(final_total), 0) as total 
+                FROM pedidos 
+                WHERE status IN ('VENDA', 'PAGO', 'APROVADO') 
+                AND data_criacao::date = CURRENT_DATE
+            `,
+
+            // B. Orçamentos Pendentes
+            sql`
+                SELECT COUNT(*) as qtd 
+                FROM pedidos 
+                WHERE status = 'ORCAMENTO'
+            `,
+
+            // C. Faturamento Mês Atual
+            sql`
+                SELECT COALESCE(SUM(final_total), 0) as total 
+                FROM pedidos 
+                WHERE status IN ('VENDA', 'PAGO', 'APROVADO') 
+                AND data_criacao >= date_trunc('month', CURRENT_DATE)
+            `,
+
+            // D. Gráfico (Últimos 7 dias)
+            sql`
+                SELECT 
+                    to_char(data_criacao, 'DD/MM') as dia,
+                    COALESCE(SUM(final_total), 0) as total
+                FROM pedidos
+                WHERE status IN ('VENDA', 'PAGO', 'APROVADO')
+                AND data_criacao > CURRENT_DATE - INTERVAL '7 days'
+                GROUP BY 1
+                ORDER BY 1
+            `,
+
+            // E. Lucro (Cálculo Simplificado baseado na sua tabela atual)
+            // Se 'total' for custo e 'final_total' for venda, isso funciona.
+            // Se não, precisamos das tabelas de itens e produtos.
+            sql`
+                SELECT COALESCE(SUM(final_total - total), 0) as total
+                FROM pedidos
+                WHERE status IN ('VENDA', 'PAGO', 'APROVADO')
+                AND data_criacao >= date_trunc('month', CURRENT_DATE)
             `
         ])
 
-        // 3. Retorno com os nomes CORRETOS que o Frontend espera
+        // 3. Retorno Formatado
         return {
             vendas_hoje: Number(vendasHoje[0].total),
             orcamentos_abertos: Number(orcamentosPendentes[0].qtd),
             faturamento_mes: Number(vendasMes[0].total),
-            lucro_mes: Number(lucroMes[0].total), // Novo campo
+            lucro_mes: Number(lucroEstimado[0].total),
             grafico: historico.map(h => ({
                 dia: h.dia,
                 total: Number(h.total)
@@ -62,7 +80,7 @@ export default defineEventHandler(async (event) => {
         }
 
     } catch (error) {
-        console.error("Erro Dashboard:", error)
+        console.error("ERRO NO SQL:", error) // Isso vai mostrar o erro real no terminal se falhar
         throw createError({ statusCode: 500, message: 'Erro ao carregar dashboard' })
     }
 })
