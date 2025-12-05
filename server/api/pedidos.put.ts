@@ -17,9 +17,8 @@ export default defineEventHandler(async (event) => {
   try {
     const user = jwt.verify(token, process.env.JWT_SECRET as string) as any
 
-    // 1. Atualiza Status e Valor Total (Cabeçalho)
+    // 1. Atualiza Cabeçalho do Pedido
     if (body.status || body.valor_total !== undefined) {
-        // Monta um objeto dinâmico para update
         const updateData: any = {}
         if (body.status) updateData.status = body.status
         if (body.valor_total !== undefined) updateData.valor_total = body.valor_total
@@ -30,19 +29,43 @@ export default defineEventHandler(async (event) => {
         `
     }
 
-    // 2. Atualiza os Itens (Se vierem na requisição)
+    // 2. Atualiza ou Cria Itens
     if (body.itens && Array.isArray(body.itens)) {
         for (const item of body.itens) {
-            // Só atualiza se tiver ID do item (edição)
+            
             if (item.id) {
+                // --- UPDATE (Se já tem ID) ---
                 await sql`
                     UPDATE pedidos_itens SET
                         descricao = ${item.descricao},
                         marca = ${item.marca || ''},
                         fornecedor = ${item.fornecedor || ''},
                         quantidade = ${item.quantidade},
-                        preco_unitario = ${item.preco_unitario}
+                        preco_unitario = ${item.preco_unitario},
+                        comodo = ${item.comodo || 'Geral'} 
                     WHERE id = ${item.id} AND pedido_id = ${body.id}
+                `
+            } else {
+                // --- INSERT (Se ID é null = Item Novo!) ---
+                // Isso faltava no seu código. Sem isso o "Adicionar Material" não salva.
+                await sql`
+                    INSERT INTO pedidos_itens (
+                        pedido_id, 
+                        descricao, 
+                        marca, 
+                        fornecedor, 
+                        quantidade, 
+                        preco_unitario, 
+                        comodo
+                    ) VALUES (
+                        ${body.id},
+                        ${item.descricao || 'Novo Item'},
+                        ${item.marca || ''},
+                        ${item.fornecedor || ''},
+                        ${item.quantidade || 1},
+                        ${item.preco_unitario || 0},
+                        ${item.comodo || 'Geral'}
+                    )
                 `
             }
         }
