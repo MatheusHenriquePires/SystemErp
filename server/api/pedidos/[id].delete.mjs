@@ -1,6 +1,6 @@
 // Importe sua conexão com o banco de dados. 
 // Ajuste o caminho '../utils/db.js' para onde você configurou sua instância 'sql'
-import { sql } from '../../utils/db.js'; // ou '~/server/utils/db'
+import { sql } from '~/server/utils/db';
 
 export default defineEventHandler(async (event) => {
   // 1. Captura o ID da URL (ex: /api/pedidos/50)
