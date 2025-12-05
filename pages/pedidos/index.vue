@@ -146,7 +146,7 @@
 <script setup lang="ts">
 import DashboardLayout from '~/layouts/DashboardLayout.vue';
 
-const pedidos = ref([]);
+const pedidos = ref<any[]>([]); // Tipagem básica para array
 const loading = ref(true);
 const filtroAtual = ref('TODOS');
 
@@ -193,20 +193,23 @@ const atualizarStatus = async (id: number, novoStatus: string) => {
   } catch (e) { alert('Erro ao atualizar status.'); }
 };
 
-// --- NOVO: FUNÇÃO DE EXCLUIR ---
+// --- FUNÇÃO DE EXCLUIR CORRIGIDA ---
 const excluirPedido = async (id: number) => {
     if (!confirm('ATENÇÃO: Tem certeza que deseja EXCLUIR este pedido?\nIsso apagará também os itens e o financeiro dele.')) return;
 
     try {
-        await $fetch('/api/pedidos/delete', {
-            method: 'POST',
-            body: { id }
+        // CORREÇÃO: Usar crases (`) e a variável correta (id)
+        await $fetch(`/api/pedidos/${id}`, {
+            method: 'DELETE'
         });
-        // Remove da lista visualmente sem recarregar tudo
+        
+        // Remove da lista visualmente
         pedidos.value = pedidos.value.filter((p: any) => p.id !== id);
-        // Ou recarrega tudo para garantir: await carregarPedidos();
+        
     } catch (e: any) {
-        alert('Erro ao excluir: ' + e.message);
+        // Tenta pegar a mensagem de erro do servidor ou usa a genérica
+        const msg = e.data?.statusMessage || e.message || 'Erro desconhecido';
+        alert('Erro ao excluir: ' + msg);
     }
 };
 
