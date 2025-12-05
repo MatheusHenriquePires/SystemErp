@@ -1,57 +1,50 @@
 <template>
-  <NuxtLayout name="dashboard-layout">
-    <div class="p-8">
+  <DashboardLayout>
+    <div class="px-4 py-6 md:px-8">
       
-      <div class="mb-8">
-        <h1 class="text-2xl font-bold text-slate-800">Visão Geral</h1>
-        <p class="text-gray-500">Bem-vindo ao painel de controle do seu ERP.</p>
+      <div class="mb-8 flex justify-between items-center">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">👋 Olá, Equipe!</h1>
+          <p class="text-gray-500 mt-1">Visão geral do seu negócio hoje.</p>
+        </div>
+        
+        <NuxtLink to="/pedidos/novo" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-bold shadow transition flex items-center gap-2">
+          <span>+</span> Nova Venda
+        </NuxtLink>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex justify-between items-start border-l-4 border-l-blue-400">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between border-l-4 border-l-green-500">
           <div>
-            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Vendas Hoje</p>
-            <h3 class="text-2xl font-extrabold text-slate-800">{{ formatarMoeda(dashboard.vendas_hoje) }}</h3>
-            <p class="text-xs text-blue-400 mt-2 font-medium">
-                {{ dashboard.vendas_hoje > 0 ? 'Vendas rolando!' : 'Sem vendas ainda' }}
-            </p>
+            <p class="text-sm font-medium text-gray-500 mb-1">Recebido este Mês</p>
+            <h2 class="text-3xl font-bold text-green-700">{{ formatarMoeda(stats.faturamento) }}</h2>
           </div>
-          <div class="p-3 bg-blue-50 rounded-lg text-blue-400">
-            <span class="text-xl">💲</span>
+          <div class="p-3 bg-green-50 rounded-full">
+            <span class="text-2xl">💰</span>
           </div>
         </div>
 
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex justify-between items-start border-l-4 border-l-blue-600">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between border-l-4 border-l-yellow-400">
           <div>
-            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Faturamento Mês</p>
-            <h3 class="text-2xl font-extrabold text-slate-800">{{ formatarMoeda(dashboard.faturamento_mes) }}</h3>
-            <p class="text-xs text-blue-600 mt-2 font-medium">Total Bruto</p>
+            <p class="text-sm font-medium text-gray-500 mb-1">Total a Receber</p>
+            <h2 class="text-3xl font-bold text-yellow-600">{{ formatarMoeda(stats.pendentes) }}</h2>
           </div>
-          <div class="p-3 bg-blue-50 rounded-lg text-blue-600">
-            <span class="text-xl">📈</span>
+          <div class="p-3 bg-yellow-50 rounded-full">
+            <span class="text-2xl">⏳</span>
           </div>
         </div>
 
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex justify-between items-start border-l-4 border-l-emerald-500">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between border-l-4 border-l-red-500">
           <div>
-            <p class="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-1">Lucro Líquido</p>
-            <h3 class="text-2xl font-extrabold text-emerald-700">{{ formatarMoeda(dashboard.lucro_mes) }}</h3>
-            <p class="text-xs text-emerald-600 mt-2 font-medium">Dinheiro Real (Caixa)</p>
+            <p class="text-sm font-medium text-gray-500 mb-1">Alerta de Estoque</p>
+            <h2 class="text-3xl font-bold" :class="stats.baixoEstoque > 0 ? 'text-red-600' : 'text-gray-900'">
+              {{ stats.baixoEstoque }}
+            </h2>
+            <p v-if="stats.baixoEstoque > 0" class="text-xs text-red-500 mt-1">Produtos acabando!</p>
           </div>
-          <div class="p-3 bg-emerald-50 rounded-lg text-emerald-600">
-            <span class="text-xl">💰</span>
-          </div>
-        </div>
-
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex justify-between items-start border-l-4 border-l-orange-500">
-          <div>
-            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Orçamentos</p>
-            <h3 class="text-2xl font-extrabold text-slate-800">{{ dashboard.orcamentos_abertos }}</h3>
-            <p class="text-xs text-orange-600 mt-2 font-medium">Pendentes de aprovação</p>
-          </div>
-          <div class="p-3 bg-orange-50 rounded-lg text-orange-600">
-            <span class="text-xl">📄</span>
+          <div class="p-3 bg-red-50 rounded-full">
+            <span class="text-2xl">📦</span>
           </div>
         </div>
 
@@ -59,95 +52,108 @@
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div class="flex justify-between items-center mb-6">
-            <h3 class="font-bold text-slate-800">Desempenho (Últimos 7 dias)</h3>
+        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+            <h3 class="font-bold text-gray-800">Últimos Pedidos</h3>
+            <NuxtLink to="/pedidos" class="text-sm text-blue-600 hover:text-blue-800 font-medium">Ver todos &rarr;</NuxtLink>
           </div>
           
-          <div class="h-64 flex items-end justify-between space-x-2 px-4 border-b border-gray-200 pb-2">
-             <div v-if="dashboard.grafico.length === 0" class="w-full text-center text-gray-400 self-center">
-                Sem dados de vendas nos últimos 7 dias.
-             </div>
-
-             <div v-for="(dia, index) in dashboard.grafico" :key="index" class="flex flex-col items-center flex-1 group">
-                <div class="relative w-full flex justify-end flex-col items-center">
-                    <span class="opacity-0 group-hover:opacity-100 absolute -top-8 bg-gray-800 text-white text-xs py-1 px-2 rounded transition mb-1 z-10 whitespace-nowrap">
-                        {{ formatarMoeda(dia.total) }}
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+              <thead class="bg-gray-50 text-gray-500 font-medium border-b border-gray-100">
+                <tr>
+                  <th class="px-6 py-3">ID</th>
+                  <th class="px-6 py-3">Cliente</th>
+                  <th class="px-6 py-3">Valor Total</th>
+                  <th class="px-6 py-3">Status</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                <tr v-for="pedido in stats.recentes" :key="pedido.id" class="hover:bg-gray-50">
+                  <td class="px-6 py-3 font-mono text-gray-500">#{{ pedido.id }}</td>
+                  <td class="px-6 py-3 font-medium text-gray-900">{{ pedido.cliente_nome }}</td>
+                  <td class="px-6 py-3 font-bold">{{ formatarMoeda(pedido.valor_total) }}</td>
+                  <td class="px-6 py-3">
+                    <span :class="`px-2 py-1 rounded-full text-xs font-bold ${getCorStatus(pedido.status)}`">
+                      {{ pedido.status }}
                     </span>
-                    <div 
-                        class="w-full bg-blue-500 rounded-t-sm hover:bg-blue-600 transition-all duration-500"
-                        :style="{ height: `${calcularAltura(dia.total)}px`, minHeight: '4px' }"
-                    ></div>
-                </div>
-                <span class="text-xs text-gray-500 mt-2 font-medium">{{ dia.dia }}</span>
-             </div>
+                  </td>
+                </tr>
+                <tr v-if="stats.recentes.length === 0">
+                  <td colspan="4" class="px-6 py-8 text-center text-gray-400">Nenhuma venda recente.</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 h-fit">
-          <h3 class="font-bold text-slate-800 mb-4">Acesso Rápido</h3>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 h-fit">
+          <h3 class="font-bold text-gray-800 mb-4">Acesso Rápido</h3>
           <div class="space-y-3">
-            <NuxtLink to="/pedidos/novo" class="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg group transition cursor-pointer border border-transparent hover:border-gray-200">
-              <span class="text-sm font-medium text-gray-700">Novo Orçamento</span>
-              <span class="text-gray-400 group-hover:text-blue-600 text-lg">+</span>
+            
+            <NuxtLink to="/produtos" class="flex items-center p-3 rounded-lg bg-gray-50 hover:bg-blue-50 hover:text-blue-700 transition group">
+              <span class="bg-white p-2 rounded shadow-sm mr-3 group-hover:scale-110 transition text-lg">📦</span>
+              <div>
+                <span class="font-bold block">Gerenciar Estoque</span>
+                <span class="text-xs text-gray-500">Ver produtos e preços</span>
+              </div>
             </NuxtLink>
 
-            <NuxtLink to="/pedidos" class="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg group transition cursor-pointer border border-transparent hover:border-gray-200">
-              <span class="text-sm font-medium text-gray-700">Ver Pedidos</span>
-              <span class="text-gray-400 group-hover:text-blue-600 text-lg">📦</span>
+            <NuxtLink to="/admin/usuarios" class="flex items-center p-3 rounded-lg bg-gray-50 hover:bg-purple-50 hover:text-purple-700 transition group">
+              <span class="bg-white p-2 rounded shadow-sm mr-3 group-hover:scale-110 transition text-lg">👥</span>
+              <div>
+                <span class="font-bold block">Minha Equipe</span>
+                <span class="text-xs text-gray-500">Adicionar vendedores</span>
+              </div>
             </NuxtLink>
 
-            <button @click="emBreve" class="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg group transition cursor-pointer border border-transparent hover:border-gray-200">
-              <span class="text-sm font-medium text-gray-700">Gerenciar Clientes</span>
-              <span class="text-gray-400 group-hover:text-blue-600 text-lg">👥</span>
-            </button>
+            <NuxtLink to="/financeiro" class="flex items-center p-3 rounded-lg bg-gray-50 hover:bg-green-50 hover:text-green-700 transition group">
+              <span class="bg-white p-2 rounded shadow-sm mr-3 text-lg">💰</span>
+              <div>
+                <span class="font-bold block">Contas a Receber</span>
+                <span class="text-xs text-gray-500">Baixar pagamentos</span>
+              </div>
+            </NuxtLink>
+
           </div>
         </div>
 
       </div>
+
     </div>
-  </NuxtLayout>
+  </DashboardLayout>
 </template>
 
 <script setup lang="ts">
-// Definição reativa dos dados do dashboard
-const dashboard = ref({
-    vendas_hoje: 0,
-    faturamento_mes: 0,
-    lucro_mes: 0,         // Novo campo para o lucro
-    orcamentos_abertos: 0,
-    grafico: [] as any[]
+import DashboardLayout from '~/layouts/DashboardLayout.vue';
+
+const stats = ref({
+  faturamento: 0,
+  pendentes: 0,
+  baixoEstoque: 0,
+  recentes: [] as any[]
 });
 
-// Função que busca os dados no Backend
-const carregarDados = async () => {
-    try {
-        // Chama a API que criamos no passo anterior
-        const dados: any = await $fetch('/api/dashboard');
-        dashboard.value = dados;
-    } catch (e) {
-        console.error("Erro ao carregar dashboard", e);
-    }
-};
-
-// Calcula altura das barras do gráfico (proporção)
-const calcularAltura = (valor: number) => {
-    if (dashboard.value.grafico.length === 0) return 0;
-    
-    // Pega o maior valor para usar como 100% da altura (ou 100 se for tudo zero)
-    const max = Math.max(...dashboard.value.grafico.map(d => Number(d.total)), 100);
-    
-    // Regra de três: (valor / maximo) * 200px (altura fixa da div)
-    return (Number(valor) / max) * 200;
-};
-
-// Formata para Real Brasileiro (R$ 1.200,50)
 const formatarMoeda = (val: any) => {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(val));
+  const num = Number(val) || 0;
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(num);
 };
 
-const emBreve = () => alert('Funcionalidade em desenvolvimento!');
+const getCorStatus = (status: string) => {
+  if (['VENDA', 'PAGO', 'Aprovado'].includes(status)) return 'bg-green-100 text-green-700';
+  if (['PROPOSTA', 'Proposta'].includes(status)) return 'bg-blue-100 text-blue-700';
+  return 'bg-yellow-100 text-yellow-700';
+};
 
-// Carrega assim que a página abre
-onMounted(carregarDados);
+onMounted(async () => {
+  try {
+    // 👇 CHAMA A API CORRETA QUE CRIAMOS
+    const dados = await $fetch('/api/dashboard/stats');
+    stats.value = dados as any;
+  } catch (e) {
+    console.error('Erro ao carregar dashboard', e);
+  }
+});
+
+useHead({ title: 'Dashboard - ERP' });
 </script>
